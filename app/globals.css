@@ -1,26 +1,398 @@
 @import "tailwindcss";
 
+/* ============================================================
+   CSS Variables — UCIC Brand System
+   ============================================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-navy: #2f475f;
+  --color-navy-secondary: #374f67;
+  --color-dusty-blue: #9cb6d7;
+  --color-pale-blue: #edf2f5;
+  --color-cream: #fdf8d9;
+
+  --font-heading: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --shadow-soft: 0 2px 16px 0 rgba(47, 71, 95, 0.08);
+  --shadow-card: 0 4px 24px 0 rgba(47, 71, 95, 0.10);
+  --shadow-float: 0 8px 32px 0 rgba(47, 71, 95, 0.14);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================
+   Base
+   ============================================================ */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-pale-blue);
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ============================================================
+   Typography
+   ============================================================ */
+.heading-display {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.heading-section {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 600;
+}
+
+/* ============================================================
+   Stripe Background Pattern
+   ============================================================ */
+.stripe-bg {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 40px,
+    rgba(156, 182, 215, 0.08) 40px,
+    rgba(156, 182, 215, 0.08) 41px
+  );
+}
+
+/* ============================================================
+   Scrolling Text Strip
+   ============================================================ */
+.scrolling-strip {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.scrolling-strip-inner {
+  display: inline-block;
+  animation: scroll-strip 30s linear infinite;
+}
+
+@keyframes scroll-strip {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ============================================================
+   Card Styles
+   ============================================================ */
+.card-cream {
+  background-color: var(--color-cream);
+  border-radius: 0;
+  box-shadow: var(--shadow-card);
+}
+
+.card-scallop {
+  background-color: var(--color-cream);
+  border-radius: 0;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-scallop::before {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: radial-gradient(circle at 8px -8px, transparent 8px, var(--color-cream) 8px);
+  background-size: 16px 16px;
+  background-repeat: repeat-x;
+}
+
+/* ============================================================
+   Section Label (A, B, C with divider)
+   ============================================================ */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-label-letter {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--color-dusty-blue);
+  text-transform: uppercase;
+  min-width: 1.5rem;
+}
+
+.section-label-divider {
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-dusty-blue);
+  opacity: 0.4;
+}
+
+/* ============================================================
+   Pill / Tag
+   ============================================================ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.875rem;
+  border-radius: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pill-dusty {
+  background-color: rgba(156, 182, 215, 0.2);
+  color: var(--color-navy);
+  border: 1px solid rgba(156, 182, 215, 0.5);
+}
+
+.pill-navy {
+  background-color: var(--color-navy);
+  color: var(--color-cream);
+}
+
+.pill-cream {
+  background-color: var(--color-cream);
+  color: var(--color-navy);
+  border: 1px solid rgba(156, 182, 215, 0.4);
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 0;
+  background-color: var(--color-navy);
+  color: var(--color-cream);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-navy-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 0;
+  background-color: transparent;
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  transition: background-color 0.2s, transform 0.15s;
+  cursor: pointer;
+  border: 1.5px solid var(--color-navy);
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(47, 71, 95, 0.06);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0;
+  background-color: rgba(220, 80, 80, 0.1);
+  color: #8b2424;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: 1px solid rgba(220, 80, 80, 0.3);
+}
+
+.btn-danger:hover {
+  background-color: rgba(220, 80, 80, 0.18);
+}
+
+/* ============================================================
+   Form Elements
+   ============================================================ */
+.form-input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0;
+  border: 1.5px solid rgba(156, 182, 215, 0.5);
+  background-color: #fff;
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--color-dusty-blue);
+  box-shadow: 0 0 0 3px rgba(156, 182, 215, 0.25);
+}
+
+.form-input::placeholder {
+  color: rgba(47, 71, 95, 0.35);
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-navy);
+  margin-bottom: 0.375rem;
+}
+
+.form-help {
+  font-size: 0.8125rem;
+  color: rgba(47, 71, 95, 0.6);
+  margin-top: 0.25rem;
+}
+
+.form-error {
+  font-size: 0.8125rem;
+  color: #8b2424;
+  margin-top: 0.25rem;
+}
+
+/* ============================================================
+   Timeline Bar Style
+   ============================================================ */
+.timeline-bar {
+  background-color: var(--color-dusty-blue);
+  border-radius: 0;
+  opacity: 0.85;
+}
+
+/* ============================================================
+   Image Overlays
+   ============================================================ */
+.img-overlay {
+  background: linear-gradient(
+    to bottom,
+    transparent 30%,
+    rgba(47, 71, 95, 0.55) 100%
+  );
+}
+
+/* ============================================================
+   Drag handle for sortable items
+   ============================================================ */
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* ============================================================
+   Admin sidebar / layout
+   ============================================================ */
+.admin-sidebar {
+  background-color: var(--color-navy);
+  color: var(--color-pale-blue);
+}
+
+.admin-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(237, 242, 245, 0.8);
+  transition: background-color 0.15s, color 0.15s;
+  text-decoration: none;
+}
+
+.admin-sidebar-link:hover,
+.admin-sidebar-link.active {
+  background-color: rgba(156, 182, 215, 0.15);
+  color: var(--color-pale-blue);
+}
+
+/* ============================================================
+   Stat Badge
+   ============================================================ */
+.stat-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--color-cream);
+  border-radius: 0;
+  box-shadow: var(--shadow-soft);
+}
+
+/* ============================================================
+   Responsive image container
+   ============================================================ */
+.img-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ============================================================
+   Scroll fade-in animation (minimal)
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  .fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   Global border-radius override — sharp edges everywhere
+   ============================================================ */
+*, *::before, *::after {
+  border-radius: 0 !important;
+}
+
