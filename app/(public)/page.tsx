@@ -142,9 +142,7 @@ export default async function HomePage() {
                     className="w-10 h-10 flex items-center justify-center shrink-0"
                     style={{ background: 'var(--color-navy)' }}
                   >
-                    <span className="heading-display text-sm" style={{ color: 'var(--color-cream)' }}>
-                      UC
-                    </span>
+                    <img src="logo-white.png" alt="UCIC" className="w-8 h-auto opacity-100 " />
                   </div>
                   <div>
                     <div className="font-bold text-sm" style={{ color: 'var(--color-navy)' }}>
@@ -270,9 +268,7 @@ export default async function HomePage() {
               className="text-center py-20 rounded-2xl"
               style={{ border: '1.5px dashed rgba(156,182,215,0.4)' }}
             >
-              <div className="heading-display text-6xl opacity-10 mb-4" style={{ color: 'var(--color-navy)' }}>
-                UCIC
-              </div>
+              <img src="logo-black.png" alt="UCIC" className="w-32 h-auto opacity-50 mb-4 mx-auto" />
               <p className="opacity-40 italic" style={{ color: 'var(--color-navy)' }}>
                 No events yet — check back soon!
               </p>

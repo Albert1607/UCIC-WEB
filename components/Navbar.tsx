@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { ContentMap } from '@/types'
@@ -63,23 +64,21 @@ export default function Navbar({ content }: NavbarProps) {
         }}
       >
         {/* Brand / Logo */}
-        <Link href="/" className="flex items-center gap-3 no-underline group">
+        <Link href="/" className="flex items-center gap-2.5 no-underline group">
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
+            <Image
+              src={isDarkBg ? '/logo-white.png' : '/logo-black.png'}
+              alt="UCIC Logo"
+              fill
+              sizes="36px"
+              className="object-contain transition-opacity duration-300"
+              priority
+            />
+          </div>
           <span
-            className="heading-display text-2xl tracking-wider transition-colors duration-300"
+            className="text-xs sm:text-sm font-bold tracking-tight transition-colors duration-300 leading-tight"
             style={{
               color: isDarkBg ? '#ffffff' : 'var(--color-navy)',
-              lineHeight: 1,
-              textShadow: isDarkBg ? '0 2px 10px rgba(0,0,0,0.5)' : 'none',
-            }}
-          >
-            UCIC
-          </span>
-          <span
-            className="hidden sm:block text-xs font-semibold transition-colors duration-300"
-            style={{
-              color: isDarkBg ? 'rgba(255,255,255,0.82)' : 'rgba(47, 71, 95, 0.75)',
-              maxWidth: '150px',
-              lineHeight: 1.25,
               textShadow: isDarkBg ? '0 1px 6px rgba(0,0,0,0.5)' : 'none',
             }}
           >

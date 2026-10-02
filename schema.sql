@@ -32,7 +32,7 @@ create table if not exists site_stats (
   updated_at timestamptz default now()
 );
 
--- Team members
+-- Team members (Categories: HOD, COORS, MEMBER)
 create table if not exists team_members (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
@@ -43,6 +43,9 @@ create table if not exists team_members (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+-- Optional migration if adding dedicated columns:
+-- alter table team_members add column if not exists category text default 'MEMBER';
+-- alter table team_members add column if not exists division text;
 
 -- Experiences (About Us section)
 create table if not exists experiences (

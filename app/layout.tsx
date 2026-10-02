@@ -25,7 +25,7 @@ const playfairDisplay = Playfair_Display({
 
 export const metadata: Metadata = {
   title: {
-    default: 'UCIC — Universitas Ciputra International Community',
+    default: 'UCIC | Universitas Ciputra International Community',
     template: '%s | UCIC',
   },
   description:

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { TeamMember, Experience, TimelineItem } from '@/types'
 import SectionLabel from '@/components/SectionLabel'
 import ScrollingStrip from '@/components/ScrollingStrip'
+import TeamSection from '@/components/TeamSection'
 
 export const metadata: Metadata = { title: 'About Us' }
 
@@ -57,8 +58,34 @@ export default async function AboutPage() {
                 priority
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center opacity-20">
-                <span className="heading-display text-8xl" style={{ color: 'var(--color-cream)' }}>UCIC</span>
+              <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+                <div
+                  className="absolute inset-0 opacity-15 pointer-events-none"
+                  style={{
+                    background: 'radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, transparent 70%)',
+                  }}
+                />
+                <div className="relative w-32 h-32 sm:w-40 sm:h-40 mb-3 drop-shadow-2xl">
+                  <Image
+                    src="/logo-white.png"
+                    alt="UCIC Emblem"
+                    fill
+                    sizes="160px"
+                    className="object-contain"
+                  />
+                </div>
+                <div
+                  className="text-lg sm:text-xl font-bold tracking-tight"
+                  style={{ color: 'var(--color-cream)' }}
+                >
+                  Universitas Ciputra
+                </div>
+                <div
+                  className="text-xs sm:text-sm tracking-widest uppercase opacity-80 mt-1 font-semibold"
+                  style={{ color: 'var(--color-cream)' }}
+                >
+                  International Community
+                </div>
               </div>
             )}
           </div>
@@ -199,52 +226,7 @@ export default async function AboutPage() {
         </h2>
 
         {team.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {team.map((member) => (
-              <div key={member.id} className="card-cream p-5 text-center">
-                {/* Photo */}
-                <div
-                  className="w-20 h-20 rounded-full mx-auto mb-3 overflow-hidden"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--color-dusty-blue), var(--color-navy))',
-                  }}
-                >
-                  {member.photo_url ? (
-                    <Image
-                      src={member.photo_url}
-                      alt={member.name}
-                      width={80}
-                      height={80}
-                      className="img-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span
-                        className="heading-display text-2xl opacity-30"
-                        style={{ color: 'var(--color-cream)' }}
-                      >
-                        {member.name.charAt(0)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="font-bold text-sm mb-1" style={{ color: 'var(--color-navy)' }}>
-                  {member.name}
-                </div>
-                <div
-                  className="text-xs pill pill-dusty inline-block"
-                  style={{ fontSize: '0.7rem' }}
-                >
-                  {member.role}
-                </div>
-                {member.bio && (
-                  <p className="text-xs opacity-50 mt-2 line-clamp-2 leading-relaxed" style={{ color: 'var(--color-navy)' }}>
-                    {member.bio}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+          <TeamSection initialMembers={team} />
         ) : (
           <div
             className="text-center py-16 rounded-2xl"

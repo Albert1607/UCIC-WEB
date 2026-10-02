@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ContentMap } from '@/types'
 
 interface FooterProps {
@@ -19,15 +20,29 @@ export default function Footer({ content }: FooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {/* Brand */}
           <div>
-            <div
-              className="heading-display text-3xl mb-3"
-              style={{ color: 'var(--color-cream)', lineHeight: 1 }}
-            >
-              UCIC
+            <div className="flex items-center gap-3 mb-3">
+              <div className="relative w-10 h-10 flex-shrink-0">
+                <Image
+                  src="/logo-white.png"
+                  alt="UCIC Logo"
+                  fill
+                  sizes="40px"
+                  className="object-contain"
+                />
+              </div>
+              <div
+                className="text-base sm:text-lg font-bold tracking-tight leading-tight"
+                style={{ color: 'var(--color-cream)' }}
+              >
+                Universitas Ciputra<br />International Community
+              </div>
             </div>
-            <p className="text-sm opacity-70 max-w-xs leading-relaxed">
-              {content['footer_tagline'] || 'Universitas Ciputra International Community'}
-            </p>
+            {content['footer_tagline'] &&
+              content['footer_tagline'] !== 'Universitas Ciputra International Community' && (
+                <p className="text-sm opacity-70 max-w-xs leading-relaxed">
+                  {content['footer_tagline']}
+                </p>
+              )}
             <p className="text-sm opacity-50 mt-2">
               {content['footer_description'] || 'Connecting UC students with the world.'}
             </p>
