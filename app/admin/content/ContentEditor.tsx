@@ -17,6 +17,47 @@ interface Props {
 
 type SectionCategory = 'Hero' | 'About' | 'Events' | 'Navigation' | 'Footer & Contact' | 'Other'
 
+const FIELD_ORDER: Record<string, number> = {
+  // Hero
+  hero_headline: 10,
+  hero_subheadline: 20,
+  hero_cta_label: 30,
+  hero_image_url: 40,
+  hero_card_title: 50,
+  hero_card_subtitle: 60,
+  // About
+  about_title: 10,
+  about_intro: 20,
+  about_image_url: 30,
+  about_mission_title: 40,
+  about_mission: 50,
+  about_vision_title: 60,
+  about_vision: 70,
+  // Events
+  events_section_title: 10,
+  events_upcoming_label: 20,
+  events_past_label: 30,
+  latest_activity_title: 40,
+  register_button_label: 50,
+  register_closed_label: 60,
+  register_full_label: 70,
+  // Navigation
+  nav_home: 10,
+  nav_about: 20,
+  nav_events: 30,
+  nav_contact: 40,
+  // Footer & Contact
+  footer_tagline: 10,
+  footer_description: 20,
+  contact_email: 30,
+  contact_instagram: 40,
+  contact_line: 50,
+  scrolling_strip_text: 60,
+  // Other
+  stats_section_title: 10,
+  team_section_title: 20,
+}
+
 export default function ContentEditor({ initialContent }: Props) {
   const [content, setContent] = useState<ContentItem[]>(initialContent)
   const [activeTab, setActiveTab] = useState<SectionCategory>('Hero')
@@ -42,8 +83,14 @@ export default function ContentEditor({ initialContent }: Props) {
 
   const categories: SectionCategory[] = ['Hero', 'About', 'Events', 'Navigation', 'Footer & Contact', 'Other']
 
-  // Filter content for active tab
-  const activeItems = content.filter((item) => getCategory(item.key) === activeTab)
+  // Filter content for active tab and sort logically
+  const activeItems = content
+    .filter((item) => getCategory(item.key) === activeTab)
+    .sort(
+      (a, b) =>
+        (FIELD_ORDER[a.key] ?? 999) - (FIELD_ORDER[b.key] ?? 999) ||
+        a.key.localeCompare(b.key)
+    )
 
   // Save current active tab items or all
   const handleSave = async (itemsToSave?: ContentItem[]) => {
@@ -224,13 +271,22 @@ export default function ContentEditor({ initialContent }: Props) {
                     </div>
 
                     {item.value && (
-                      <div className="relative w-48 h-28 rounded-xl overflow-hidden border border-[var(--color-dusty-blue)]/30 bg-[var(--color-navy)]/5">
-                        <Image
-                          src={item.value}
-                          alt={item.label || 'Image preview'}
-                          fill
-                          className="object-cover"
-                        />
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-48 h-28 rounded-xl overflow-hidden border border-[var(--color-dusty-blue)]/30 bg-[var(--color-navy)]/5 shadow-sm">
+                          <Image
+                            src={item.value}
+                            alt={item.label || 'Image preview'}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updateValue(item.key, '')}
+                          className="btn-secondary !py-1.5 !px-3 text-xs text-red-600 hover:text-red-700 hover:border-red-300"
+                        >
+                          Remove Image
+                        </button>
                       </div>
                     )}
                   </div>

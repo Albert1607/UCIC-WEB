@@ -245,6 +245,7 @@ insert into site_content (key, value, content_type, label) values
   ('hero_card_subtitle', 'Open to all UC students', 'text', 'Hero Floating Card Subtitle'),
   ('about_title', 'About Us', 'text', 'About Page Title'),
   ('about_intro', 'We are the Universitas Ciputra International Community — a student-led organization dedicated to fostering international connections, cross-cultural understanding, and global opportunities within UC.', 'text', 'About Intro'),
+  ('about_image_url', '', 'text', 'About Section Image URL'),
   ('about_mission_title', 'Our Mission', 'text', 'Mission Section Title'),
   ('about_mission', 'To create an inclusive community where every UC student — local or international — feels at home, grows as a global citizen, and builds meaningful connections.', 'text', 'Mission Statement'),
   ('about_vision_title', 'Our Vision', 'text', 'Vision Section Title'),

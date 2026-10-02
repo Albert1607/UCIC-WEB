@@ -45,12 +45,22 @@ export default async function AboutPage() {
             </p>
           </div>
           <div
-            className="rounded-2xl overflow-hidden"
+            className="relative rounded-2xl overflow-hidden shadow-lg"
             style={{ height: '380px', background: 'linear-gradient(135deg, var(--color-dusty-blue) 0%, var(--color-navy) 100%)' }}
           >
-            <div className="w-full h-full flex items-center justify-center opacity-20">
-              <span className="heading-display text-8xl" style={{ color: 'var(--color-cream)' }}>UCIC</span>
-            </div>
+            {content['about_image_url'] ? (
+              <Image
+                src={content['about_image_url']}
+                alt={content['about_title'] || 'About Us'}
+                fill
+                className="img-cover object-cover"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center opacity-20">
+                <span className="heading-display text-8xl" style={{ color: 'var(--color-cream)' }}>UCIC</span>
+              </div>
+            )}
           </div>
         </div>
       </section>

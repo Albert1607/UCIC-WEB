@@ -91,6 +91,30 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+.card-navy {
+  background-color: var(--color-navy);
+  color: var(--color-cream);
+  border-radius: 0;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(156, 182, 215, 0.15);
+}
+
+.card-pale {
+  background-color: var(--color-pale-blue);
+  color: var(--color-navy);
+  border-radius: 0;
+  box-shadow: var(--shadow-card);
+  border: 1.5px solid rgba(156, 182, 215, 0.5);
+}
+
+.card-white {
+  background-color: #ffffff;
+  color: var(--color-navy);
+  border-radius: 0;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(47, 71, 95, 0.12);
+}
+
 .card-scallop {
   background-color: var(--color-cream);
   border-radius: 0;
