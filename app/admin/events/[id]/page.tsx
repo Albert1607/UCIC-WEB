@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Event } from '@/types'
 import EventForm from '@/components/admin/EventForm'
+import EventTabNav from '@/components/admin/EventTabNav'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -61,30 +62,7 @@ export default async function AdminEventDetailPage({ params }: Props) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-[var(--color-dusty-blue)]/30 pb-3 overflow-x-auto">
-          <Link
-            href={`/admin/events/${typedEvent.id}`}
-            className="px-4 py-2 rounded-pill text-xs font-bold bg-[var(--color-navy)] text-[var(--color-cream)]"
-          >
-            Details & Settings
-          </Link>
-          {typedEvent.registration_mode === 'internal' && (
-            <>
-              <Link
-                href={`/admin/events/${typedEvent.id}/form-builder`}
-                className="px-4 py-2 rounded-pill text-xs font-bold bg-[var(--color-cream)] text-[var(--color-navy)] border border-[var(--color-dusty-blue)]/50 hover:bg-[var(--color-dusty-blue)]/20 transition-colors"
-              >
-                Form Builder
-              </Link>
-              <Link
-                href={`/admin/events/${typedEvent.id}/registrants`}
-                className="px-4 py-2 rounded-pill text-xs font-bold bg-[var(--color-cream)] text-[var(--color-navy)] border border-[var(--color-dusty-blue)]/50 hover:bg-[var(--color-dusty-blue)]/20 transition-colors"
-              >
-                Registrants
-              </Link>
-            </>
-          )}
-        </div>
+        <EventTabNav event={typedEvent} activeTab="details" />
 
         {/* Edit Form */}
         <EventForm initialEvent={typedEvent} />

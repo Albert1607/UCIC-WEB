@@ -24,6 +24,10 @@ type FormData = {
   one_submission_per_email: boolean
   cover_image_url: string
   is_published: boolean
+  requires_submission: boolean
+  submission_deadline: string
+  submission_instructions: string
+  post_registration_message: string
 }
 
 function toLocalDatetimeValue(isoString: string | null | undefined): string {
@@ -58,6 +62,10 @@ export default function EventForm({ initialEvent }: EventFormProps) {
     one_submission_per_email: initialEvent?.one_submission_per_email ?? false,
     cover_image_url: initialEvent?.cover_image_url ?? '',
     is_published: initialEvent?.is_published ?? false,
+    requires_submission: initialEvent?.requires_submission ?? false,
+    submission_deadline: toLocalDatetimeValue(initialEvent?.submission_deadline),
+    submission_instructions: initialEvent?.submission_instructions ?? '',
+    post_registration_message: initialEvent?.post_registration_message ?? '',
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -147,6 +155,12 @@ export default function EventForm({ initialEvent }: EventFormProps) {
             : false,
         cover_image_url: form.cover_image_url || null,
         is_published: form.is_published,
+        requires_submission: form.requires_submission,
+        submission_deadline: form.submission_deadline
+          ? new Date(form.submission_deadline).toISOString()
+          : null,
+        submission_instructions: form.submission_instructions.trim() || null,
+        post_registration_message: form.post_registration_message.trim() || null,
       }
 
       let res: Response
@@ -381,6 +395,115 @@ export default function EventForm({ initialEvent }: EventFormProps) {
               </p>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Cover Image Card */}
+      {/* Post-Registration Message Card */}
+      <div className="card-cream rounded-2xl p-6 space-y-5">
+        <div>
+          <h2 className="heading-section text-[var(--color-navy)]">Post-Registration Message</h2>
+          <p className="form-help mt-1">
+            Shown to participants after they successfully register. Perfect for WhatsApp group
+            links, important reminders, or next steps.
+          </p>
+        </div>
+        <div>
+          <label className="form-label" htmlFor="post_registration_message">
+            Message
+          </label>
+          <textarea
+            id="post_registration_message"
+            name="post_registration_message"
+            rows={4}
+            value={form.post_registration_message}
+            onChange={handleChange}
+            placeholder={`e.g.\n🎉 Selamat sudah mendaftar!\nJoin grup WA: https://wa.me/...`}
+            className="form-input resize-none"
+          />
+          <p className="form-help">Leave blank to show the default success message.</p>
+        </div>
+      </div>
+
+      {/* Submission Settings Card */}
+      <div className="card-cream rounded-2xl p-6 space-y-5">
+        <h2 className="heading-section text-[var(--color-navy)]">Submission Settings</h2>
+
+        {/* Toggle */}
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-pale-blue)]">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.requires_submission}
+            onClick={() =>
+              setForm((prev) => ({ ...prev, requires_submission: !prev.requires_submission }))
+            }
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 mt-0.5 ${
+              form.requires_submission
+                ? 'bg-[var(--color-navy)]'
+                : 'bg-[var(--color-dusty-blue)]/40'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                form.requires_submission ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          <div>
+            <p className="form-label mb-0">Requires Submission</p>
+            <p className="form-help mt-0.5">
+              Participants must submit their work after registering (e.g. competition entries).
+              They will need to log in to register.
+            </p>
+          </div>
+        </div>
+
+        {form.requires_submission && (
+          <>
+            <div>
+              <label className="form-label" htmlFor="submission_deadline">
+                Submission Deadline
+              </label>
+              <input
+                id="submission_deadline"
+                name="submission_deadline"
+                type="datetime-local"
+                value={form.submission_deadline}
+                onChange={handleChange}
+                className="form-input"
+              />
+              <p className="form-help">
+                Leave blank for no deadline. Separate from the registration deadline.
+              </p>
+            </div>
+
+            <div>
+              <label className="form-label" htmlFor="submission_instructions">
+                Instructions for Participants
+              </label>
+              <textarea
+                id="submission_instructions"
+                name="submission_instructions"
+                rows={3}
+                value={form.submission_instructions}
+                onChange={handleChange}
+                placeholder="Describe what participants should submit and how…"
+                className="form-input resize-none"
+              />
+              <p className="form-help">Shown on the submission page.</p>
+            </div>
+
+            <div className="p-4 rounded-xl border border-[var(--color-dusty-blue)]/30 bg-white/40">
+              <p className="text-sm font-semibold text-[var(--color-navy)]">
+                📋 Submission Form Builder
+              </p>
+              <p className="form-help mt-1">
+                After saving, go to the <strong>Submission Builder</strong> tab to configure what
+                participants must submit (files, links, text fields).
+              </p>
+            </div>
+          </>
         )}
       </div>
 

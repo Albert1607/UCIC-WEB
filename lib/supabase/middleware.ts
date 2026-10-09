@@ -63,5 +63,17 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Public user protected routes → redirect to login if not authenticated
+  const isPublicUserProtectedRoute =
+    pathname === '/my-submissions' ||
+    /^\/events\/[^/]+\/submit$/.test(pathname)
+
+  if (isPublicUserProtectedRoute && !isAuthenticated) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
+  }
+
   return supabaseResponse
 }

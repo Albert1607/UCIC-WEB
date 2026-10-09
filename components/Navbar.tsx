@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { ContentMap } from '@/types'
+import { createClient } from '@/lib/supabase/client'
 
 interface NavbarProps {
   content: ContentMap
@@ -14,6 +15,17 @@ export default function Navbar({ content }: NavbarProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [isDarkBg, setIsDarkBg] = useState(pathname === '/')
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
+
+  // Check if user is logged in (public user, not admin)
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => listener.subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     const updateContrast = () => {
@@ -109,20 +121,54 @@ export default function Navbar({ content }: NavbarProps) {
               {l.label}
             </Link>
           ))}
-          <Link
-            href="/events"
-            className="btn-primary ml-3 !py-2.5 !px-6 text-sm font-semibold tracking-wide transition-all duration-300"
-            style={{
-              background: isDarkBg ? 'var(--color-cream)' : 'var(--color-navy)',
-              color: isDarkBg ? 'var(--color-navy)' : 'var(--color-cream)',
-              border: 'none',
-              boxShadow: isDarkBg
-                ? '0 2px 12px rgba(0,0,0,0.2)'
-                : '0 2px 12px rgba(47,71,95,0.15)',
-            }}
-          >
-            {content['hero_cta_label'] || 'Browse Events'}
-          </Link>
+          {/* User auth nav — replaces Browse Events */}
+          {user ? (
+            <div className="flex items-center gap-2 ml-3">
+              <Link
+                href="/my-submissions"
+                className="btn-primary !py-2.5 !px-6 text-sm font-semibold tracking-wide transition-all duration-300"
+                style={{
+                  background: isDarkBg ? 'var(--color-cream)' : 'var(--color-navy)',
+                  color: isDarkBg ? 'var(--color-navy)' : 'var(--color-cream)',
+                  border: 'none',
+                  boxShadow: isDarkBg
+                    ? '0 2px 12px rgba(0,0,0,0.2)'
+                    : '0 2px 12px rgba(47,71,95,0.15)',
+                }}
+              >
+                My Submissions
+              </Link>
+              <form action="/api/auth/logout" method="POST">
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors"
+                  style={{
+                    color: isDarkBg ? 'rgba(255,255,255,0.70)' : 'var(--color-navy)',
+                    borderColor: isDarkBg
+                      ? 'rgba(255,255,255,0.30)'
+                      : 'rgba(156,182,215,0.5)',
+                  }}
+                >
+                  Logout
+                </button>
+              </form>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="btn-primary ml-3 !py-2.5 !px-6 text-sm font-semibold tracking-wide transition-all duration-300"
+              style={{
+                background: isDarkBg ? 'var(--color-cream)' : 'var(--color-navy)',
+                color: isDarkBg ? 'var(--color-navy)' : 'var(--color-cream)',
+                border: 'none',
+                boxShadow: isDarkBg
+                  ? '0 2px 12px rgba(0,0,0,0.2)'
+                  : '0 2px 12px rgba(47,71,95,0.15)',
+              }}
+            >
+              Login
+            </Link>
+          )}
         </nav>
 
         {/* Mobile Hamburger Toggle */}
@@ -175,17 +221,44 @@ export default function Navbar({ content }: NavbarProps) {
               {l.label}
             </Link>
           ))}
-          <Link
-            href="/events"
-            className="btn-primary mt-2 text-sm text-center !py-3"
-            style={{
-              background: isDarkBg ? 'var(--color-cream)' : 'var(--color-navy)',
-              color: isDarkBg ? 'var(--color-navy)' : 'var(--color-cream)',
-            }}
-            onClick={() => setOpen(false)}
-          >
-            {content['hero_cta_label'] || 'Browse Events'}
-          </Link>
+          {/* Mobile user auth — replaces Browse Events */}
+          {user ? (
+            <>
+              <Link
+                href="/my-submissions"
+                className="btn-primary mt-2 text-sm text-center !py-3"
+                style={{
+                  background: isDarkBg ? 'var(--color-cream)' : 'var(--color-navy)',
+                  color: isDarkBg ? 'var(--color-navy)' : 'var(--color-cream)',
+                }}
+                onClick={() => setOpen(false)}
+              >
+                My Submissions
+              </Link>
+              <form action="/api/auth/logout" method="POST">
+                <button
+                  type="submit"
+                  onClick={() => setOpen(false)}
+                  className="w-full text-left px-3 py-2.5 text-base font-medium transition-all"
+                  style={{ color: isDarkBg ? 'rgba(255,255,255,0.60)' : 'var(--color-dusty-blue)' }}
+                >
+                  Logout
+                </button>
+              </form>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="btn-primary mt-2 text-sm text-center !py-3"
+              style={{
+                background: isDarkBg ? 'var(--color-cream)' : 'var(--color-navy)',
+                color: isDarkBg ? 'var(--color-navy)' : 'var(--color-cream)',
+              }}
+              onClick={() => setOpen(false)}
+            >
+              Login
+            </Link>
+          )}
         </div>
       )}
     </header>

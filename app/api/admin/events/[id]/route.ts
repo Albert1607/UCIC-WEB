@@ -34,6 +34,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (body.external_registration_url !== undefined) updateData.external_registration_url = body.external_registration_url || null
     if (body.one_submission_per_email !== undefined) updateData.one_submission_per_email = !!body.one_submission_per_email
     if (body.email_field_id !== undefined) updateData.email_field_id = body.email_field_id || null
+    if (body.requires_submission !== undefined) updateData.requires_submission = !!body.requires_submission
+    if (body.submission_deadline !== undefined) updateData.submission_deadline = body.submission_deadline || null
+    if (body.submission_instructions !== undefined) updateData.submission_instructions = body.submission_instructions || null
+    if (body.post_registration_message !== undefined) updateData.post_registration_message = body.post_registration_message || null
 
     updateData.updated_at = new Date().toISOString()
 

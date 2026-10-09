@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Event, FormField } from '@/types'
 import FormBuilderClient from './FormBuilderClient'
+import EventTabNav from '@/components/admin/EventTabNav'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -70,26 +71,7 @@ export default async function FormBuilderPage({ params }: PageProps) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-[var(--color-dusty-blue)]/30 pb-3 overflow-x-auto">
-          <Link
-            href={`/admin/events/${typedEvent.id}`}
-            className="px-4 py-2 rounded-pill text-xs font-bold bg-[var(--color-cream)] text-[var(--color-navy)] border border-[var(--color-dusty-blue)]/50 hover:bg-[var(--color-dusty-blue)]/20 transition-colors"
-          >
-            Details & Settings
-          </Link>
-          <Link
-            href={`/admin/events/${typedEvent.id}/form-builder`}
-            className="px-4 py-2 rounded-pill text-xs font-bold bg-[var(--color-navy)] text-[var(--color-cream)]"
-          >
-            Form Builder
-          </Link>
-          <Link
-            href={`/admin/events/${typedEvent.id}/registrants`}
-            className="px-4 py-2 rounded-pill text-xs font-bold bg-[var(--color-cream)] text-[var(--color-navy)] border border-[var(--color-dusty-blue)]/50 hover:bg-[var(--color-dusty-blue)]/20 transition-colors"
-          >
-            Registrants
-          </Link>
-        </div>
+        <EventTabNav event={typedEvent} activeTab="form-builder" />
 
         {/* Warning banner when registration_mode is not 'internal' */}
         {typedEvent.registration_mode !== 'internal' && (

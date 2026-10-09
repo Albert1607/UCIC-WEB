@@ -51,6 +51,10 @@ export async function POST(req: NextRequest) {
       registration_mode,
       external_registration_url,
       one_submission_per_email,
+      requires_submission,
+      submission_deadline,
+      submission_instructions,
+      post_registration_message,
     } = body
 
     if (!title || typeof title !== 'string') {
@@ -77,6 +81,10 @@ export async function POST(req: NextRequest) {
         registration_mode: registration_mode || 'none',
         external_registration_url: external_registration_url || null,
         one_submission_per_email: !!one_submission_per_email,
+        requires_submission: !!requires_submission,
+        submission_deadline: submission_deadline || null,
+        submission_instructions: submission_instructions || null,
+        post_registration_message: post_registration_message || null,
       })
       .select()
       .single()

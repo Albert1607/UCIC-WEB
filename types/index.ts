@@ -69,6 +69,11 @@ export interface Event {
   external_registration_url: string | null
   one_submission_per_email: boolean
   email_field_id: string | null
+  // Submission feature
+  requires_submission: boolean
+  submission_deadline: string | null
+  submission_instructions: string | null
+  post_registration_message: string | null
   created_at: string
   updated_at: string
 }
@@ -109,8 +114,47 @@ export interface FormField {
 export interface Registration {
   id: string
   event_id: string
+  user_id: string | null
   answers: Record<string, unknown>
   submitted_email: string | null
+  created_at: string
+}
+
+// ── Submission Feature Types ─────────────────────────────────
+
+export type SubmissionFieldType = 'short_text' | 'long_text' | 'url' | 'file_upload'
+
+export interface SubmissionField {
+  id: string
+  event_id: string
+  field_type: SubmissionFieldType
+  label: string
+  help_text: string | null
+  placeholder: string | null
+  required: boolean
+  allowed_file_types: string[] | null  // e.g. ['pdf', 'zip', 'jpg']
+  max_file_size_mb: number | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface EventSubmission {
+  id: string
+  event_id: string
+  registration_id: string
+  user_id: string
+  answers: Record<string, string>  // { [field_id]: text | url | storage_path }
+  status: 'draft' | 'submitted'
+  submitted_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UserProfile {
+  id: string
+  full_name: string | null
+  student_id: string | null
   created_at: string
 }
 

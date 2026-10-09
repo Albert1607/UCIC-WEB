@@ -116,22 +116,46 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Get user session (may be null for non-submission events)
+    const { data: { user } } = await supabase.auth.getUser()
+
     // Insert using admin client (bypasses RLS insert restriction — but we've validated above)
     const admin = createAdminClient()
-    const { error: insertError } = await admin
+    const { data: insertedReg, error: insertError } = await admin
       .from('registrations')
       .insert({
         event_id: event.id,
         answers,
         submitted_email: submittedEmail,
+        user_id: user?.id ?? null,
       })
+      .select('id')
+      .single()
 
     if (insertError) {
       console.error('Registration insert error:', insertError)
       return NextResponse.json({ error: 'Failed to save registration.' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true }, { status: 201 })
+    // If event requires submission, create a draft submission slot
+    if (event.requires_submission && user && insertedReg) {
+      await admin.from('event_submissions').insert({
+        event_id: event.id,
+        registration_id: insertedReg.id,
+        user_id: user.id,
+        answers: {},
+        status: 'draft',
+      })
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        requiresSubmission: !!event.requires_submission,
+        submissionDeadline: event.submission_deadline ?? null,
+      },
+      { status: 201 }
+    )
   } catch (err) {
     console.error('Registration error:', err)
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 })

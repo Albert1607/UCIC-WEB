@@ -30,6 +30,15 @@ export default async function RegisterPage({ params }: Props) {
 
   const event: Event = eventData
 
+  // If event requires submission, user must be logged in
+  if (event.requires_submission) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      const { redirect } = await import('next/navigation')
+      redirect(`/login?next=/events/${slug}/register`)
+    }
+  }
+
   // Guard conditions
   const past = isEventPast(event)
   const closed = isRegistrationClosed(event)
