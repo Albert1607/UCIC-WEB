@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Barlow_Condensed, Inter, Playfair_Display } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const barlowCondensed = Barlow_Condensed({
@@ -48,7 +49,10 @@ export default function RootLayout({
       lang="en"
       className={`${barlowCondensed.variable} ${inter.variable} ${playfairDisplay.variable}`}
     >
-      <body className="min-h-screen bg-[#edf2f5] stripe-bg">{children}</body>
+      <body className="min-h-screen bg-[#edf2f5] stripe-bg">
+        {children}
+        <Analytics />
+      </body>
     </html>
   )
 }
