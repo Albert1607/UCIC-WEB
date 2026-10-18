@@ -29,14 +29,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { year: string; title: string; description?: string; sort_order?: number };
+  let body: { year: string; title: string; description?: string; sort_order?: number; image_urls?: string[] };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { year, title, description, sort_order } = body;
+  const { year, title, description, sort_order, image_urls } = body;
   if (!year || !title) {
     return NextResponse.json({ error: 'year and title are required' }, { status: 400 });
   }
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await admin
     .from('timeline_items')
-    .insert({ year, title, description: description ?? null, sort_order: order })
+    .insert({ year, title, description: description ?? null, sort_order: order, image_urls: image_urls ?? [] })
     .select()
     .single();
 

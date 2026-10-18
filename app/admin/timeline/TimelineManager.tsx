@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { TimelineItem } from '@/types'
+import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   initialItems: TimelineItem[]
@@ -12,23 +14,45 @@ export default function TimelineManager({ initialItems }: Props) {
   const router = useRouter()
   const [items, setItems] = useState<TimelineItem[]>(initialItems)
   const [isEditing, setIsEditing] = useState(false)
-  const [current, setCurrent] = useState<Partial<TimelineItem>>({ year: '', title: '', description: '' })
+  const [current, setCurrent] = useState<Partial<TimelineItem>>({ year: '', title: '', description: '', image_urls: [] })
   const [saving, setSaving] = useState(false)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [uploadingImg, setUploadingImg] = useState(false)
 
   const openNew = () => {
-    setCurrent({ year: '', title: '', description: '' })
+    setCurrent({ year: '', title: '', description: '', image_urls: [] })
     setIsEditing(true)
   }
 
   const openEdit = (item: TimelineItem) => {
-    setCurrent(item)
+    setCurrent({ ...item, image_urls: item.image_urls ?? [] })
     setIsEditing(true)
   }
 
   const closeModal = () => {
     setIsEditing(false)
-    setCurrent({ year: '', title: '', description: '' })
+    setCurrent({ year: '', title: '', description: '', image_urls: [] })
+  }
+
+  const handleAddImage = async (file: File) => {
+    setUploadingImg(true)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop()
+      const path = `timeline/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('site-images').upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const { data } = supabase.storage.from('site-images').getPublicUrl(path)
+      setCurrent((p) => ({ ...p, image_urls: [...(p.image_urls ?? []), data.publicUrl] }))
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error uploading')
+    } finally {
+      setUploadingImg(false)
+    }
+  }
+
+  const removeImage = (url: string) => {
+    setCurrent((p) => ({ ...p, image_urls: (p.image_urls ?? []).filter((u) => u !== url) }))
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -132,6 +156,19 @@ export default function TimelineManager({ initialItems }: Props) {
                     {item.description}
                   </div>
                 )}
+                {/* Image thumbnails */}
+                {item.image_urls && item.image_urls.length > 0 && (
+                  <div className="flex gap-1 mt-2 overflow-x-auto">
+                    {item.image_urls.map((url, i) => (
+                      <div key={i} className="relative shrink-0 w-12 h-9 overflow-hidden border border-[var(--color-dusty-blue)]/30">
+                        <Image src={url} alt="" fill className="object-cover" sizes="48px" />
+                      </div>
+                    ))}
+                    <span className="text-xs opacity-50 self-center ml-1 text-[var(--color-navy)]">
+                      {item.image_urls.length} photo{item.image_urls.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
@@ -161,7 +198,7 @@ export default function TimelineManager({ initialItems }: Props) {
       {/* Add/Edit Modal */}
       {isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="card-cream w-full max-w-md rounded-2xl shadow-float p-6 space-y-4">
+          <div className="card-cream w-full max-w-lg rounded-2xl shadow-float p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[var(--color-dusty-blue)]/30 pb-3">
               <h3 className="heading-section text-xl text-[var(--color-navy)]">
                 {current.id ? 'Edit Timeline Item' : 'New Timeline Item'}
@@ -193,6 +230,37 @@ export default function TimelineManager({ initialItems }: Props) {
                   onChange={(e) => setCurrent((p) => ({ ...p, description: e.target.value }))}
                 />
               </div>
+
+              {/* Images */}
+              <div>
+                <label className="form-label">Photos (carousel images for this milestone)</label>
+                <div className="flex gap-2 items-center mb-3">
+                  <label className="btn-secondary !py-2 !px-3 text-xs cursor-pointer">
+                    {uploadingImg ? 'Uploading…' : '+ Add Photo'}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploadingImg}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAddImage(f) }}
+                    />
+                  </label>
+                  <span className="text-xs opacity-50 text-[var(--color-navy)]">
+                    {(current.image_urls ?? []).length} photo(s) — auto-dissolve carousel in public view
+                  </span>
+                </div>
+                {(current.image_urls ?? []).length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {(current.image_urls ?? []).map((url, i) => (
+                      <div key={i} className="relative w-20 h-14 overflow-hidden border border-[var(--color-dusty-blue)]/30 group">
+                        <Image src={url} alt="" fill className="object-cover" sizes="80px" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(url)}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 text-xs bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-3 pt-3 border-t border-[var(--color-dusty-blue)]/20">
                 <button type="button" onClick={closeModal} className="btn-secondary !py-2 !px-4 text-xs">Cancel</button>
                 <button type="submit" disabled={saving} className="btn-primary !py-2 !px-5 text-xs">

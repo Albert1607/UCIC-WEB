@@ -21,6 +21,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (body.title !== undefined) updateData.title = body.title
     if (body.description !== undefined) updateData.description = body.description || null
     if (body.sort_order !== undefined) updateData.sort_order = body.sort_order
+    if (body.image_urls !== undefined) updateData.image_urls = body.image_urls ?? []
     updateData.updated_at = new Date().toISOString()
 
     const admin = createAdminClient()

@@ -7,6 +7,8 @@ import { TeamMember, Experience, TimelineItem } from '@/types'
 import SectionLabel from '@/components/SectionLabel'
 import ScrollingStrip from '@/components/ScrollingStrip'
 import TeamSection from '@/components/TeamSection'
+import JourneyTimeline from '@/components/JourneyTimeline'
+import ExperienceSection from '@/components/ExperienceSection'
 
 export const metadata: Metadata = { title: 'About Us' }
 
@@ -133,7 +135,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ====== EXPERIENCES ====== */}
+      {/* ====== EXPERIENCES (WHAT WE DO) ====== */}
       {experiences.length > 0 && (
         <section className="py-20 max-w-7xl mx-auto px-6">
           <SectionLabel letter="C" />
@@ -143,73 +145,23 @@ export default async function AboutPage() {
           >
             What We Do
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {experiences.map((exp, i) => (
-              <div key={exp.id} className="card-cream p-6">
-                <div
-                  className="heading-display text-5xl mb-3 opacity-15"
-                  style={{ color: 'var(--color-navy)' }}
-                >
-                  {String(i + 1).padStart(2, '0')}
-                </div>
-                {exp.year && (
-                  <span
-                    className="pill pill-dusty mb-3 inline-block"
-                  >
-                    {exp.year}
-                  </span>
-                )}
-                <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--color-navy)' }}>
-                  {exp.title}
-                </h3>
-                {exp.description && (
-                  <p className="text-sm opacity-60 leading-relaxed" style={{ color: 'var(--color-navy)' }}>
-                    {exp.description}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+          <ExperienceSection experiences={experiences} />
         </section>
       )}
 
-      {/* ====== TIMELINE ====== */}
+      {/* ====== TIMELINE (OUR JOURNEY) ====== */}
       {timeline.length > 0 && (
-        <section className="py-20" style={{ background: 'var(--color-pale-blue)' }}>
-          <div className="max-w-4xl mx-auto px-6">
+        <section className="py-20 overflow-hidden" style={{ background: 'var(--color-pale-blue)' }}>
+          <div className="max-w-7xl mx-auto px-6 mb-12">
             <SectionLabel letter="D" />
             <h2
-              className="heading-section text-3xl sm:text-4xl mb-12"
+              className="heading-section text-3xl sm:text-4xl"
               style={{ color: 'var(--color-navy)' }}
             >
               Our Journey
             </h2>
-            <div className="space-y-3">
-              {timeline.map((item) => (
-                <div
-                  key={item.id}
-                  className="timeline-bar flex items-center gap-6 p-5 cursor-default"
-                >
-                  <span
-                    className="heading-display text-2xl min-w-[72px]"
-                    style={{ color: 'var(--color-navy)', opacity: 0.7 }}
-                  >
-                    {item.year}
-                  </span>
-                  <div>
-                    <div className="font-bold text-sm" style={{ color: 'var(--color-navy)' }}>
-                      {item.title}
-                    </div>
-                    {item.description && (
-                      <div className="text-sm opacity-60 mt-0.5" style={{ color: 'var(--color-navy)' }}>
-                        {item.description}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
+          <JourneyTimeline items={timeline} />
         </section>
       )}
 

@@ -29,14 +29,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { title: string; description?: string; year?: string; sort_order?: number };
+  let body: { title: string; description?: string; year?: string; sort_order?: number; banner_image_url?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { title, description, year, sort_order } = body;
+  const { title, description, year, sort_order, banner_image_url } = body;
   if (!title) {
     return NextResponse.json({ error: 'title is required' }, { status: 400 });
   }
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await admin
     .from('experiences')
-    .insert({ title, description: description ?? null, year: year ?? null, sort_order: order })
+    .insert({ title, description: description ?? null, year: year ?? null, sort_order: order, banner_image_url: banner_image_url ?? null })
     .select()
     .single();
 

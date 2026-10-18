@@ -26,13 +26,41 @@ export default function RegistrantsClient({ event, fields, initialRegistrations 
     return fields.filter((f) => f.field_type !== 'section_header')
   }, [fields])
 
-  // Helper to format answers
+  // Helper to format answers (for table cells)
   const formatAnswerValue = (val: unknown): string => {
     if (val === null || val === undefined) return '—'
     if (Array.isArray(val)) return val.join(', ')
     if (typeof val === 'boolean') return val ? 'Yes' : 'No'
-    if (typeof val === 'object') return JSON.stringify(val)
-    return String(val)
+    // Old submissions: File object was serialized to {} before upload was fixed
+    if (typeof val === 'object') return '⚠️ File not saved'
+    const s = String(val)
+    // Detect storage paths like "registrations/..."
+    if (s.startsWith('registrations/') || s.startsWith('uploads/')) return '📎 ' + s.split('/').pop()!
+    return s
+  }
+
+  // Detect what kind of value a field answer is
+  const getFileStatus = (val: unknown): 'path' | 'lost' | 'none' => {
+    if (val === null || val === undefined || val === '') return 'none'
+    if (typeof val === 'object') return 'lost' // serialized File — upload never happened
+    const s = String(val)
+    if (s.startsWith('registrations/') || s.startsWith('uploads/')) return 'path'
+    return 'none'
+  }
+
+  // Get signed URL for a file path
+  const getFileUrl = async (path: string): Promise<string | null> => {
+    try {
+      const res = await fetch('/api/admin/registrations/file-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, bucket: 'registration-files' }),
+      })
+      const data = await res.json()
+      return data.signedUrl ?? null
+    } catch {
+      return null
+    }
   }
 
   // Filtered and sorted data
@@ -319,16 +347,41 @@ export default function RegistrantsClient({ event, fields, initialRegistrations 
             </div>
 
             <div className="space-y-4">
-              {questionFields.map((field) => (
-                <div key={field.id} className="p-3.5 rounded-xl bg-white/60 border border-[var(--color-dusty-blue)]/20">
-                  <p className="text-xs font-bold text-[var(--color-dusty-blue)] uppercase tracking-wider mb-1">
-                    {field.label}
-                  </p>
-                  <p className="text-sm text-[var(--color-navy)] break-words whitespace-pre-wrap">
-                    {formatAnswerValue(selectedRegistration.answers?.[field.id])}
-                  </p>
-                </div>
-              ))}
+              {questionFields.map((field) => {
+                const val = selectedRegistration.answers?.[field.id]
+                const strVal = typeof val === 'string' ? val : ''
+                const fileStatus = getFileStatus(val)
+                return (
+                  <div key={field.id} className="p-3.5 rounded-xl bg-white/60 border border-[var(--color-dusty-blue)]/20">
+                    <p className="text-xs font-bold text-[var(--color-dusty-blue)] uppercase tracking-wider mb-1">
+                      {field.label}
+                    </p>
+                    {fileStatus === 'path' ? (
+                      <button
+                        onClick={async () => {
+                          const url = await getFileUrl(strVal)
+                          if (url) window.open(url, '_blank')
+                          else alert('Could not generate download link')
+                        }}
+                        className="text-sm text-blue-600 underline hover:text-blue-800 text-left"
+                      >
+                        📎 {strVal.split('/').pop()}
+                      </button>
+                    ) : fileStatus === 'lost' ? (
+                      <p
+                        className="text-xs font-medium px-2 py-1 rounded inline-flex items-center gap-1"
+                        style={{ background: 'rgba(251,191,36,0.15)', color: '#92620a' }}
+                      >
+                        ⚠️ File was not saved — submitted before upload was enabled. Ask the participant to resubmit.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-[var(--color-navy)] break-words whitespace-pre-wrap">
+                        {formatAnswerValue(val)}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             <div className="flex justify-end pt-3">

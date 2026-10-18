@@ -75,7 +75,7 @@ export default function ContentEditor({ initialContent }: Props) {
   const getCategory = (key: string): SectionCategory => {
     if (key.startsWith('hero_')) return 'Hero'
     if (key.startsWith('about_')) return 'About'
-    if (key.startsWith('events_') || key.startsWith('register_') || key.startsWith('latest_activity_')) return 'Events'
+    if (key.startsWith('events_') || key.startsWith('register_') || key.startsWith('latest_activity_') || key.startsWith('news_')) return 'Events'
     if (key.startsWith('nav_')) return 'Navigation'
     if (key.startsWith('footer_') || key.startsWith('contact_') || key.startsWith('scrolling_strip_')) return 'Footer & Contact'
     return 'Other'

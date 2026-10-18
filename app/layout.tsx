@@ -32,10 +32,7 @@ export const metadata: Metadata = {
   description:
     'Universitas Ciputra International Community — connecting students across the globe.',
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(
-      'https://jvcvbgcaltqhtabxahdg.supabase.co',
-      'https://ucic.ciputra.ac.id'
-    ) ?? 'http://localhost:3000'
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://ucic-psi.vercel.app'
   ),
 }
 

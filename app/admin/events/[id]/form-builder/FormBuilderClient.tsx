@@ -37,6 +37,8 @@ const FIELD_TYPE_LABELS: Record<FormField['field_type'], string> = {
   yes_no: 'Yes / No',
   file_upload: 'File Upload',
   section_header: 'Section Header',
+  text_block: 'Text Block',
+  image_block: 'Image Block',
 }
 
 const FIELD_TYPE_COLORS: Record<FormField['field_type'], string> = {
@@ -52,6 +54,8 @@ const FIELD_TYPE_COLORS: Record<FormField['field_type'], string> = {
   yes_no: 'bg-cyan-100 text-cyan-700',
   file_upload: 'bg-gray-100 text-gray-700',
   section_header: 'bg-[#edf2f5] text-[#2f475f] font-bold',
+  text_block: 'bg-amber-100 text-amber-800',
+  image_block: 'bg-lime-100 text-lime-800',
 }
 
 const ADD_FIELD_TYPES: Array<{ type: FormField['field_type']; label: string }> = [
@@ -66,6 +70,9 @@ const ADD_FIELD_TYPES: Array<{ type: FormField['field_type']; label: string }> =
   { type: 'checkboxes', label: 'Checkboxes' },
   { type: 'yes_no', label: 'Yes / No' },
   { type: 'file_upload', label: 'File Upload' },
+  { type: 'section_header', label: 'Section Header' },
+  { type: 'text_block', label: 'Text Block' },
+  { type: 'image_block', label: 'Image Block' },
 ]
 
 const PLACEHOLDER_TYPES: Array<FormField['field_type']> = [
@@ -90,7 +97,10 @@ function makeNewField(
     id: crypto.randomUUID(),
     event_id: eventId,
     field_type: type,
-    label: type === 'section_header' ? 'Section Header' : '',
+    label: type === 'section_header' ? 'Section Header'
+      : type === 'text_block' ? 'Text Block'
+      : type === 'image_block' ? ''
+      : '',
     help_text: null,
     placeholder: null,
     required: false,
@@ -240,6 +250,40 @@ function FormPreview({ fields }: { fields: FormField[] }) {
           )
         }
 
+        if (field.field_type === 'text_block') {
+          return (
+            <div key={field.id} className="p-4 bg-[--color-pale-blue] border border-[--color-dusty-blue]/30">
+              <div
+                className="text-sm leading-relaxed text-[--color-navy] whitespace-pre-line"
+                dangerouslySetInnerHTML={{ __html: field.label || '(Empty text block)' }}
+              />
+            </div>
+          )
+        }
+
+        if (field.field_type === 'image_block') {
+          return (
+            <div key={field.id} className="text-center">
+              {field.label ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={field.label}
+                  alt={field.help_text ?? 'Image'}
+                  className="max-w-full mx-auto rounded-lg border border-[--color-dusty-blue]/20"
+                  style={{ maxHeight: 320 }}
+                />
+              ) : (
+                <div className="w-full h-32 rounded-lg border-2 border-dashed border-[--color-dusty-blue] bg-[--color-pale-blue] flex items-center justify-center text-gray-400 text-sm">
+                  🖼 No image URL set — paste a URL in the editor
+                </div>
+              )}
+              {field.help_text && (
+                <p className="form-help mt-2 text-center">{field.help_text}</p>
+              )}
+            </div>
+          )
+        }
+
         return (
           <div key={field.id} className="space-y-1">
             <label className="form-label">
@@ -329,6 +373,78 @@ interface FieldEditorProps {
   allEmailFields: FormField[]
 }
 
+// HyperlinkButton: inserts <a href="...">text</a> at cursor in a textarea/input
+function HyperlinkButton({ targetId, currentValue, onInsert }: {
+  targetId: string
+  currentValue: string
+  onInsert: (newValue: string) => void
+}) {
+  const [showPopup, setShowPopup] = useState(false)
+  const [linkText, setLinkText] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
+
+  const handleInsert = () => {
+    const el = document.getElementById(targetId) as HTMLInputElement | HTMLTextAreaElement | null
+    if (!el) { setShowPopup(false); return }
+    const start = el.selectionStart ?? currentValue.length
+    const end = el.selectionEnd ?? currentValue.length
+    const selected = currentValue.slice(start, end)
+    const text = linkText || selected || 'link'
+    const tag = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`
+    const newVal = currentValue.slice(0, start) + tag + currentValue.slice(end)
+    onInsert(newVal)
+    setShowPopup(false)
+    setLinkText('')
+    setLinkUrl('')
+  }
+
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        title="Insert Hyperlink"
+        onClick={() => setShowPopup((v) => !v)}
+        className="p-1 rounded text-gray-400 hover:text-[--color-navy] hover:bg-[--color-pale-blue] border border-gray-200"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+          <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+          <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+        </svg>
+      </button>
+      {showPopup && (
+        <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-gray-200 shadow-lg p-3 w-64 space-y-2">
+          <p className="text-xs font-semibold text-gray-600">Insert Hyperlink</p>
+          <input
+            type="text"
+            className="form-input text-sm"
+            placeholder="Link text (optional if text selected)"
+            value={linkText}
+            onChange={(e) => setLinkText(e.target.value)}
+          />
+          <input
+            type="url"
+            className="form-input text-sm"
+            placeholder="https://..."
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleInsert() }}
+          />
+          <div className="flex gap-2">
+            <button type="button" onClick={handleInsert} disabled={!linkUrl}
+              className="btn-primary !py-1 !px-3 text-xs flex-1 disabled:opacity-50">
+              Insert
+            </button>
+            <button type="button" onClick={() => setShowPopup(false)}
+              className="btn-secondary !py-1 !px-3 text-xs">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FieldEditor({
   field,
   onChange,
@@ -356,37 +472,113 @@ function FieldEditor({
     update({ options: opts })
   }
 
+  const isTextBlock = field.field_type === 'text_block'
+  const isImageBlock = field.field_type === 'image_block'
+  const labelId = `label-${field.id}`
+  const helpId = `help-${field.id}`
+
   return (
     <div className="space-y-4">
       <h3 className="font-semibold text-[--color-navy] text-sm uppercase tracking-wide">
         Edit Field — <span className={`rounded px-1.5 py-0.5 ${FIELD_TYPE_COLORS[field.field_type]}`}>{FIELD_TYPE_LABELS[field.field_type]}</span>
       </h3>
 
-      {/* Label */}
-      <div>
-        <label className="form-label">
-          Label {field.field_type !== 'section_header' && <span className="text-red-500">*</span>}
-        </label>
-        <input
-          type="text"
-          className="form-input"
-          value={field.label}
-          onChange={(e) => update({ label: e.target.value })}
-          placeholder="Enter field label…"
-        />
-      </div>
+      {/* Image Block editor */}
+      {isImageBlock && (
+        <div className="space-y-3">
+          <div>
+            <label className="form-label">Image URL</label>
+            <input
+              id={labelId}
+              type="url"
+              className="form-input"
+              value={field.label}
+              onChange={(e) => update({ label: e.target.value })}
+              placeholder="https://... or paste a Supabase public URL"
+            />
+            {field.label && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={field.label}
+                alt="Preview"
+                className="mt-2 max-w-full rounded-lg border border-[--color-dusty-blue]/20"
+                style={{ maxHeight: 200 }}
+              />
+            )}
+          </div>
+          <div>
+            <label className="form-label" htmlFor={helpId}>Caption <span className="opacity-50 font-normal text-xs">(optional)</span></label>
+            <input
+              id={helpId}
+              type="text"
+              className="form-input"
+              value={field.help_text ?? ''}
+              onChange={(e) => update({ help_text: e.target.value || null })}
+              placeholder="Image caption shown below the image"
+            />
+          </div>
+        </div>
+      )}
 
-      {/* Help text */}
-      <div>
-        <label className="form-label">Help Text</label>
-        <input
-          type="text"
-          className="form-input"
-          value={field.help_text ?? ''}
-          onChange={(e) => update({ help_text: e.target.value || null })}
-          placeholder="Optional description shown below the label"
-        />
-      </div>
+      {/* Label / Text Block content */}
+      {!isImageBlock && (
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <label className="form-label !mb-0" htmlFor={labelId}>
+              {isTextBlock ? 'Text Content' : <>Label {field.field_type !== 'section_header' && <span className="text-red-500">*</span>}</>}
+            </label>
+            <HyperlinkButton
+              targetId={labelId}
+              currentValue={field.label}
+              onInsert={(newVal) => update({ label: newVal })}
+            />
+          </div>
+          {isTextBlock ? (
+            <>
+              <textarea
+                id={labelId}
+                rows={6}
+                className="form-input font-mono text-sm"
+                value={field.label}
+                onChange={(e) => update({ label: e.target.value })}
+                placeholder="Enter your text. Press Enter for new lines. Use the 🔗 button to insert hyperlinks."
+              />
+              <p className="form-help">Supports HTML hyperlinks. Line breaks are preserved in the form view.</p>
+            </>
+          ) : (
+            <input
+              id={labelId}
+              type="text"
+              className="form-input"
+              value={field.label}
+              onChange={(e) => update({ label: e.target.value })}
+              placeholder="Enter field label…"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Help text — hide for text_block and image_block */}
+      {!isTextBlock && !isImageBlock && (
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <label className="form-label !mb-0" htmlFor={helpId}>Help Text</label>
+            <HyperlinkButton
+              targetId={helpId}
+              currentValue={field.help_text ?? ''}
+              onInsert={(newVal) => update({ help_text: newVal || null })}
+            />
+          </div>
+          <input
+            id={helpId}
+            type="text"
+            className="form-input"
+            value={field.help_text ?? ''}
+            onChange={(e) => update({ help_text: e.target.value || null })}
+            placeholder="Optional description shown below the label"
+          />
+        </div>
+      )}
 
       {/* Placeholder (applicable types only) */}
       {PLACEHOLDER_TYPES.includes(field.field_type) && (
@@ -402,8 +594,8 @@ function FieldEditor({
         </div>
       )}
 
-      {/* Required */}
-      {field.field_type !== 'section_header' && (
+      {/* Required — not for section_header, text_block, or image_block */}
+      {field.field_type !== 'section_header' && !isTextBlock && !isImageBlock && (
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -470,7 +662,7 @@ function FieldEditor({
         <div className="rounded-lg border border-[--color-dusty-blue] bg-[--color-pale-blue] p-3">
           <label className="form-label">Duplicate Submission Email Field</label>
           <p className="form-help mb-2">
-            This event has "one submission per email" enabled. Select which email field is used to detect duplicates.
+            This event has &ldquo;one submission per email&rdquo; enabled. Select which email field is used to detect duplicates.
           </p>
           <select
             className="form-input"

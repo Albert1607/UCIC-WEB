@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef, ChangeEvent } from 'react'
+import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Event } from '@/types'
+import HyperlinkButton from './HyperlinkButton'
 import { generateSlug } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 
@@ -43,7 +44,174 @@ function toLocalDatetimeValue(isoString: string | null | undefined): string {
   }
 }
 
+// ---------------------------------------------------------------------------
+// RichTextEditor — lightweight contentEditable toolbar (bold/italic/underline/link)
+// ---------------------------------------------------------------------------
+
+interface RichTextEditorProps {
+  value: string
+  onChange: (html: string) => void
+}
+
+function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null)
+  const [showLinkPopup, setShowLinkPopup] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkText, setLinkText] = useState('')
+  const savedRange = useRef<Range | null>(null)
+
+  // Sync initial value into the editor
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleInput = useCallback(() => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML)
+    }
+  }, [onChange])
+
+  const exec = (command: string, value?: string) => {
+    editorRef.current?.focus()
+    document.execCommand(command, false, value)
+    handleInput()
+  }
+
+  const saveSelection = () => {
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount > 0) {
+      savedRange.current = sel.getRangeAt(0).cloneRange()
+    }
+  }
+
+  const restoreSelection = () => {
+    const sel = window.getSelection()
+    if (savedRange.current && sel) {
+      sel.removeAllRanges()
+      sel.addRange(savedRange.current)
+    }
+  }
+
+  const handleInsertLink = () => {
+    const url = linkUrl.trim()
+    if (!url) { setShowLinkPopup(false); return }
+    restoreSelection()
+    const sel = window.getSelection()
+    const hasText = sel && !sel.isCollapsed
+    if (hasText) {
+      exec('createLink', url)
+    } else {
+      const text = linkText.trim() || url
+      const html = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`
+      exec('insertHTML', html)
+    }
+    setShowLinkPopup(false)
+    setLinkUrl('')
+    setLinkText('')
+  }
+
+  const ToolbarBtn = ({ command, title, children }: { command?: string; title: string; children: React.ReactNode; onClick?: () => void }) => (
+    <button
+      type="button"
+      title={title}
+      onMouseDown={(e) => { e.preventDefault(); if (command) exec(command) }}
+      className="p-1.5 rounded text-gray-600 hover:text-[var(--color-navy)] hover:bg-[var(--color-pale-blue)] transition-colors"
+    >
+      {children}
+    </button>
+  )
+
+  return (
+    <div className="border border-[var(--color-dusty-blue)]/40 rounded-xl overflow-hidden bg-white">
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-[var(--color-dusty-blue)]/20 bg-[var(--color-pale-blue)]/30">
+        <ToolbarBtn command="bold" title="Bold (Ctrl+B)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M6 4h4.5a3.5 3.5 0 110 7H6V4zm0 7h5a3.5 3.5 0 110 7H6v-7z" /></svg>
+        </ToolbarBtn>
+        <ToolbarBtn command="italic" title="Italic (Ctrl+I)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M8 4h6M6 16h6M11 4l-2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+        </ToolbarBtn>
+        <ToolbarBtn command="underline" title="Underline (Ctrl+U)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M5 4v6a5 5 0 0010 0V4M4 17h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+        </ToolbarBtn>
+        <div className="w-px h-4 bg-gray-300 mx-1" />
+        {/* Link button */}
+        <div className="relative">
+          <button
+            type="button"
+            title="Insert Link"
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); setShowLinkPopup(v => !v) }}
+            className="p-1.5 rounded text-gray-600 hover:text-[var(--color-navy)] hover:bg-[var(--color-pale-blue)] transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+              <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+            </svg>
+          </button>
+          {showLinkPopup && (
+            <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-gray-200 shadow-lg rounded-lg p-3 w-64 space-y-2">
+              <p className="text-xs font-semibold text-gray-600">Insert Link</p>
+              <input
+                type="text"
+                className="form-input text-sm"
+                placeholder="Link text (if no selection)"
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+              />
+              <input
+                type="url"
+                className="form-input text-sm"
+                placeholder="https://..."
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleInsertLink() }}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button type="button" onClick={handleInsertLink} disabled={!linkUrl}
+                  className="btn-primary !py-1 !px-3 text-xs flex-1 disabled:opacity-50">
+                  Insert
+                </button>
+                <button type="button" onClick={() => setShowLinkPopup(false)}
+                  className="btn-secondary !py-1 !px-3 text-xs">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="w-px h-4 bg-gray-300 mx-1" />
+        <ToolbarBtn command="removeFormat" title="Clear Formatting">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M5 4h10M8 4l1 12M12 4l-1 12M4 16h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+        </ToolbarBtn>
+      </div>
+      {/* Editable area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onBlur={handleInput}
+        className="min-h-[120px] p-3 text-sm text-[var(--color-navy)] focus:outline-none leading-relaxed"
+        style={{ fontFamily: 'inherit' }}
+        data-placeholder="Describe the event... Select text to bold/italic/underline, or use the link button to insert clickable links."
+      />
+      <style>{`
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #aaa;
+          pointer-events: none;
+        }
+      `}</style>
+    </div>
+  )
+}
+
 export default function EventForm({ initialEvent }: EventFormProps) {
+
   const router = useRouter()
   const isEditing = !!initialEvent
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(isEditing)
@@ -243,17 +411,12 @@ export default function EventForm({ initialEvent }: EventFormProps) {
           <p className="form-help">Auto-generated from title. Edit to customise the URL.</p>
         </div>
 
-        {/* Description */}
+        {/* Description – rich text editor */}
         <div>
-          <label className="form-label" htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            name="description"
-            rows={4}
+          <label className="form-label">Description</label>
+          <RichTextEditor
             value={form.description}
-            onChange={handleChange}
-            placeholder="Describe the event…"
-            className="form-input resize-none"
+            onChange={(val) => setForm(prev => ({ ...prev, description: val }))}
           />
         </div>
       </div>
@@ -409,9 +572,16 @@ export default function EventForm({ initialEvent }: EventFormProps) {
           </p>
         </div>
         <div>
-          <label className="form-label" htmlFor="post_registration_message">
-            Message
-          </label>
+          <div className="flex items-center gap-2 mb-1">
+            <label className="form-label !mb-0" htmlFor="post_registration_message">
+              Message
+            </label>
+            <HyperlinkButton
+              targetId="post_registration_message"
+              currentValue={form.post_registration_message}
+              onInsert={(newVal) => setForm((prev) => ({ ...prev, post_registration_message: newVal }))}
+            />
+          </div>
           <textarea
             id="post_registration_message"
             name="post_registration_message"
@@ -421,7 +591,7 @@ export default function EventForm({ initialEvent }: EventFormProps) {
             placeholder={`e.g.\n🎉 Selamat sudah mendaftar!\nJoin grup WA: https://wa.me/...`}
             className="form-input resize-none"
           />
-          <p className="form-help">Leave blank to show the default success message.</p>
+          <p className="form-help">Leave blank to show the default success message. Use the 🔗 button to insert clickable links.</p>
         </div>
       </div>
 

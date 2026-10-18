@@ -5,6 +5,7 @@ import Link from 'next/link'
 import FormRenderer from '@/components/FormRenderer'
 import { Event, FormField } from '@/types'
 import { formatDateTime } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   event: Event
@@ -20,10 +21,34 @@ export default function RegistrationPageClient({ event, fields }: Props) {
   const [successData, setSuccessData] = useState<SuccessData | null>(null)
 
   const handleSubmit = async (answers: Record<string, unknown>) => {
+    // Upload any File objects to Supabase Storage first
+    const supabase = createClient()
+    const processedAnswers: Record<string, unknown> = {}
+
+    for (const [key, value] of Object.entries(answers)) {
+      if (value instanceof File) {
+        try {
+          const ext = value.name.split('.').pop()
+          const path = `registrations/${event.id}/${key}/${Date.now()}.${ext}`
+          const { error: uploadError } = await supabase.storage
+            .from('registration-files')
+            .upload(path, value, { upsert: true })
+          if (uploadError) {
+            return { error: `File upload failed: ${uploadError.message}` }
+          }
+          processedAnswers[key] = path
+        } catch {
+          return { error: 'File upload failed. Please try again.' }
+        }
+      } else {
+        processedAnswers[key] = value
+      }
+    }
+
     const res = await fetch(`/api/events/${event.slug}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ answers: processedAnswers }),
     })
 
     const data = await res.json()
@@ -38,6 +63,7 @@ export default function RegistrationPageClient({ event, fields }: Props) {
     })
     return {}
   }
+
 
   if (successData) {
     return (

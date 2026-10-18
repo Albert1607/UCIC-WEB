@@ -74,21 +74,24 @@ export default function Footer({ content }: FooterProps) {
             </ul>
           </div>
 
-          {/* Contact */}
           <div>
             <h3
               className="text-xs font-semibold uppercase tracking-widest mb-4 opacity-50"
             >
               Contact
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {email && (
                 <li>
                   <a
                     href={`mailto:${email}`}
-                    className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                    className="flex items-center gap-2 text-sm opacity-70 hover:opacity-100 transition-opacity"
                     style={{ color: 'var(--color-pale-blue)' }}
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 shrink-0">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="M2 7l10 7 10-7" />
+                    </svg>
                     {email}
                   </a>
                 </li>
@@ -99,10 +102,15 @@ export default function Footer({ content }: FooterProps) {
                     href={`https://instagram.com/${instagram.replace('@', '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                    className="flex items-center gap-2 text-sm opacity-70 hover:opacity-100 transition-opacity"
                     style={{ color: 'var(--color-pale-blue)' }}
                   >
-                    Instagram: {instagram}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 shrink-0">
+                      <rect x="2" y="2" width="20" height="20" rx="5" />
+                      <circle cx="12" cy="12" r="5" />
+                      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                    </svg>
+                    {instagram}
                   </a>
                 </li>
               )}
@@ -115,6 +123,7 @@ export default function Footer({ content }: FooterProps) {
               )}
             </ul>
           </div>
+
         </div>
 
         {/* Bottom bar */}

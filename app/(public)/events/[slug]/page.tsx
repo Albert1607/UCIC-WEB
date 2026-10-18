@@ -163,13 +163,14 @@ export default async function EventDetailPage({ params }: Props) {
             </h2>
             {event.description ? (
               <div
-                className="prose prose-sm max-w-none leading-relaxed opacity-70"
+                className="prose prose-sm max-w-none leading-relaxed opacity-70 prose-a:text-[var(--color-navy)] prose-a:underline"
                 style={{ color: 'var(--color-navy)' }}
-              >
-                {event.description.split('\n').map((para, i) => (
-                  <p key={i} className="mb-4">{para}</p>
-                ))}
-              </div>
+                dangerouslySetInnerHTML={{
+                  __html: event.description
+                    // Wrap plain newlines in paragraphs only if content has no HTML tags
+                    .replace(/^(?!<[a-z])/gm, (line) => line)
+                }}
+              />
             ) : (
               <p className="opacity-40 italic" style={{ color: 'var(--color-navy)' }}>
                 No description provided yet.

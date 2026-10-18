@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { FormField, FieldOption } from '@/types'
 
 interface FormRendererProps {
@@ -29,6 +29,8 @@ export default function FormRenderer({ fields, onSubmit, submitting: externalSub
     const newErrors: Record<string, string> = {}
     fields.forEach((field) => {
       if (field.field_type === 'section_header') return
+      if (field.field_type === 'text_block') return
+      if (field.field_type === 'image_block') return
       if (!field.required) return
       const val = answers[field.id]
       if (val === undefined || val === null || val === '') {
@@ -89,7 +91,31 @@ export default function FormRenderer({ fields, onSubmit, submitting: externalSub
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto" noValidate>
       {fields.map((field) => (
         <div key={field.id}>
-          {field.field_type === 'section_header' ? (
+          {field.field_type === 'text_block' ? (
+            <div
+              className="p-4 leading-relaxed text-sm whitespace-pre-line"
+              style={{
+                background: 'rgba(156,182,215,0.12)',
+                color: 'var(--color-navy)',
+                borderLeft: '3px solid rgba(156,182,215,0.6)',
+              }}
+              dangerouslySetInnerHTML={{ __html: field.label || '' }}
+            />
+          ) : field.field_type === 'image_block' ? (
+            <div className="text-center py-1">
+              {field.label ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={field.label}
+                  alt={field.help_text ?? 'Image'}
+                  className="max-w-full mx-auto rounded-lg"
+                />
+              ) : null}
+              {field.help_text && (
+                <p className="text-xs mt-2 opacity-60" style={{ color: 'var(--color-navy)' }}>{field.help_text}</p>
+              )}
+            </div>
+          ) : field.field_type === 'section_header' ? (
             <div className="mt-6 mb-2">
               <div
                 className="font-bold text-base border-b pb-2"
@@ -150,6 +176,57 @@ export default function FormRenderer({ fields, onSubmit, submitting: externalSub
         </button>
       </div>
     </form>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// StyledFileInput – looks like "[ Choose File ]  No file chosen" (per design)
+// ---------------------------------------------------------------------------
+
+function StyledFileInput({
+  id,
+  onChange,
+}: {
+  id: string
+  onChange: (val: unknown) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setFileName(file?.name ?? null)
+    onChange(file)
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg border transition-colors"
+        style={{
+          background: 'rgba(156,182,215,0.15)',
+          color: 'var(--color-navy)',
+          border: '1.5px solid rgba(156,182,215,0.4)',
+        }}
+      >
+        Choose File
+      </button>
+      <span
+        className="text-sm"
+        style={{ color: fileName ? 'var(--color-navy)' : 'rgba(47,71,95,0.45)' }}
+      >
+        {fileName ?? 'No file chosen'}
+      </span>
+      <input
+        ref={inputRef}
+        id={id}
+        type="file"
+        className="sr-only"
+        onChange={handleChange}
+      />
+    </div>
   )
 }
 
@@ -311,14 +388,7 @@ function FieldInput({
       )
 
     case 'file_upload':
-      return (
-        <input
-          id={field.id}
-          type="file"
-          className="form-input"
-          onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-        />
-      )
+      return <StyledFileInput id={field.id} onChange={onChange} />
 
     default:
       return null

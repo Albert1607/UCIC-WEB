@@ -36,9 +36,37 @@ export interface Experience {
   title: string
   description: string | null
   year: string | null
+  banner_image_url: string | null
   sort_order: number
   created_at: string
   updated_at: string
+}
+
+export interface HeroCarouselItem {
+  id: string
+  media_url: string
+  media_type: 'image' | 'video'
+  sort_order: number
+  created_at: string
+}
+
+export interface NewsItem {
+  id: string
+  title: string
+  embed_url: string
+  thumbnail_url: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ExperienceAlbumItem {
+  id: string
+  experience_id: string
+  image_url: string
+  caption: string | null
+  sort_order: number
+  created_at: string
 }
 
 export interface TimelineItem {
@@ -46,6 +74,7 @@ export interface TimelineItem {
   year: string
   title: string
   description: string | null
+  image_urls: string[] | null
   sort_order: number
   created_at: string
   updated_at: string
@@ -91,6 +120,8 @@ export type FieldType =
   | 'yes_no'
   | 'file_upload'
   | 'section_header'
+  | 'text_block'
+  | 'image_block'
 
 export interface FieldOption {
   id: string
