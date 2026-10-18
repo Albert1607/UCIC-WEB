@@ -33,12 +33,14 @@ type FormData = {
 
 function toLocalDatetimeValue(isoString: string | null | undefined): string {
   if (!isoString) return ''
-  // Convert ISO string to datetime-local format: YYYY-MM-DDTHH:mm
+  // Convert UTC ISO string to GMT+7 (Asia/Jakarta) for datetime-local input
   try {
     const d = new Date(isoString)
     if (isNaN(d.getTime())) return ''
+    // Get the date/time parts in Jakarta timezone
+    const jakarta = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }))
     const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    return `${jakarta.getFullYear()}-${pad(jakarta.getMonth() + 1)}-${pad(jakarta.getDate())}T${pad(jakarta.getHours())}:${pad(jakarta.getMinutes())}`
   } catch {
     return ''
   }

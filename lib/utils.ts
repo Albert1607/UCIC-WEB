@@ -17,6 +17,7 @@ export function formatDate(dateStr: string | null, opts?: Intl.DateTimeFormatOpt
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'Asia/Jakarta',
     ...opts,
   })
 }
@@ -30,6 +31,7 @@ export function formatDateTime(dateStr: string | null): string {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
+    timeZone: 'Asia/Jakarta',
   })
 }
 
