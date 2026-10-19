@@ -19,9 +19,9 @@ export default async function AboutPage() {
   const content = await getSiteContent()
 
   const [teamData, expData, timelineData] = await Promise.all([
-    getAllTeamMembers(),
-    getAllExperiences(),
-    getAllTimeline(),
+    getAllTeamMembers().catch(() => []),
+    getAllExperiences().catch(() => []),
+    getAllTimeline().catch(() => []),
   ])
 
   const team: TeamMember[] = (teamData ?? []) as unknown as TeamMember[]

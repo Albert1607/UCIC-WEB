@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 export default async function EventsPage() {
   const [content, eventsData] = await Promise.all([
     getSiteContent(),
-    getAllEvents(true),
+    getAllEvents(true).catch(() => []),
   ])
 
   const allEvents: Event[] = (eventsData ?? []) as unknown as Event[]

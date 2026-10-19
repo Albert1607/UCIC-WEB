@@ -18,9 +18,9 @@ export default async function HomePage() {
   const [content, stats, allPublishedEvents, carouselData, newsData] = await Promise.all([
     getSiteContent(),
     getSiteStats(),
-    getAllEvents(true),
-    getAllCarouselItems(),
-    getAllNews(),
+    getAllEvents(true).catch(() => []),
+    getAllCarouselItems().catch(() => []),
+    getAllNews().catch(() => []),
   ])
 
   const events: Event[] = (allPublishedEvents ?? []) as unknown as Event[]
