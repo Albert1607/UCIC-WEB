@@ -12,6 +12,8 @@ import HeroScrollReveal from '@/components/HeroScrollReveal'
 import NewsCarousel from '@/components/NewsCarousel'
 import { formatDate } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const [content, stats, allPublishedEvents, carouselData, newsData] = await Promise.all([
     getSiteContent(),

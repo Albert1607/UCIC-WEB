@@ -7,6 +7,7 @@ import SectionLabel from '@/components/SectionLabel'
 import ScrollingStrip from '@/components/ScrollingStrip'
 
 export const metadata: Metadata = { title: 'Events' }
+export const dynamic = 'force-dynamic'
 
 export default async function EventsPage() {
   const [content, eventsData] = await Promise.all([

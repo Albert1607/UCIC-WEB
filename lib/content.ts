@@ -4,22 +4,32 @@ import { getAllStats } from '@/lib/db/queries/stats'
 
 /**
  * Fetch all site_content rows and return as a flat { key: value } map.
- * Uses the database query so it runs on any PostgreSQL database.
+ * Gracefully falls back to empty map if database is not reachable at build time.
  */
 export async function getSiteContent(): Promise<ContentMap> {
-  const data = await getAllContent()
-  const map: ContentMap = {}
-  if (data) {
-    data.forEach((row) => {
-      map[row.key] = row.value ?? ''
-    })
+  try {
+    const data = await getAllContent()
+    const map: ContentMap = {}
+    if (data) {
+      data.forEach((row) => {
+        map[row.key] = row.value ?? ''
+      })
+    }
+    return map
+  } catch (err) {
+    console.warn('Notice: Unable to fetch site_content, using fallback defaults.')
+    return {}
   }
-  return map
 }
 
 export async function getSiteStats(): Promise<SiteStat[]> {
-  const data = await getAllStats()
-  return data as unknown as SiteStat[]
+  try {
+    const data = await getAllStats()
+    return (data ?? []) as unknown as SiteStat[]
+  } catch (err) {
+    console.warn('Notice: Unable to fetch site_stats, using fallback defaults.')
+    return []
+  }
 }
 
 /** Get a single content value by key, with a fallback default. */

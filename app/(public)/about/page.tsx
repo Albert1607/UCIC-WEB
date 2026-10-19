@@ -13,6 +13,7 @@ import JourneyTimeline from '@/components/JourneyTimeline'
 import ExperienceSection from '@/components/ExperienceSection'
 
 export const metadata: Metadata = { title: 'About Us' }
+export const dynamic = 'force-dynamic'
 
 export default async function AboutPage() {
   const content = await getSiteContent()
