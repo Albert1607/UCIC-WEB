@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getEventById } from '@/lib/db/queries/events'
+import { getSubmissionFieldsByEvent } from '@/lib/db/queries/submissions'
 import type { Event, SubmissionField } from '@/types'
 import EventTabNav from '@/components/admin/EventTabNav'
 import SubmissionBuilderClient from './SubmissionBuilderClient'
@@ -13,17 +14,16 @@ export default async function SubmissionBuilderPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const admin = createAdminClient()
 
-  const [{ data: event, error: eventError }, { data: fields }] = await Promise.all([
-    admin.from('events').select('*').eq('id', id).single(),
-    admin.from('submission_fields').select('*').eq('event_id', id).order('sort_order'),
+  const [event, fields] = await Promise.all([
+    getEventById(id),
+    getSubmissionFieldsByEvent(id),
   ])
 
-  if (eventError || !event) notFound()
+  if (!event) notFound()
 
-  const typedEvent = event as Event
-  const typedFields = (fields ?? []) as SubmissionField[]
+  const typedEvent = event as unknown as Event
+  const typedFields = (fields ?? []) as unknown as SubmissionField[]
 
   return (
     <div className="min-h-screen bg-[var(--color-pale-blue)] p-4 sm:p-6 lg:p-8">

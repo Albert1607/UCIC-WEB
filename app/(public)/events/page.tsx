@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getSiteContent } from '@/lib/content'
-import { createClient } from '@/lib/supabase/server'
+import { getAllEvents } from '@/lib/db/queries/events'
 import { Event } from '@/types'
 import EventCard from '@/components/EventCard'
 import SectionLabel from '@/components/SectionLabel'
@@ -9,16 +9,12 @@ import ScrollingStrip from '@/components/ScrollingStrip'
 export const metadata: Metadata = { title: 'Events' }
 
 export default async function EventsPage() {
-  const content = await getSiteContent()
-  const supabase = await createClient()
+  const [content, eventsData] = await Promise.all([
+    getSiteContent(),
+    getAllEvents(true),
+  ])
 
-  const { data: eventsData } = await supabase
-    .from('events')
-    .select('*')
-    .eq('is_published', true)
-    .order('date', { ascending: false })
-
-  const allEvents: Event[] = eventsData ?? []
+  const allEvents: Event[] = (eventsData ?? []) as unknown as Event[]
   const now = new Date()
 
   const upcoming = allEvents.filter((e) => e.date && new Date(e.date) >= now)

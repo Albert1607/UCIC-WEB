@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   next?: string
@@ -18,7 +17,6 @@ export default function SignupClient({ next }: Props) {
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [emailSent, setEmailSent] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,96 +32,27 @@ export default function SignupClient({ next }: Props) {
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    const origin = typeof window !== 'undefined'
-      ? window.location.origin
-      : (process.env.NEXT_PUBLIC_SITE_URL || 'https://ucic-psi.vercel.app')
-    const redirectTo = `${origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`
-
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          student_id: studentId.trim() || null,
-        },
-        emailRedirectTo: redirectTo,
-      },
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        fullName,
+        studentId: studentId.trim() || null,
+      }),
     })
 
-    if (authError) {
-      setError(authError.message)
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error ?? 'Failed to create account.')
       setLoading(false)
       return
     }
 
-    // Insert user profile (if session exists — i.e. email confirm disabled)
-    if (data.user && data.session) {
-      await supabase.from('user_profiles').upsert({
-        id: data.user.id,
-        full_name: fullName,
-        student_id: studentId.trim() || null,
-      })
-      router.push(next || '/my-submissions')
-      router.refresh()
-      return
-    }
-
-    // Email confirmation required — store profile data temporarily in localStorage
-    if (data.user && !data.session) {
-      localStorage.setItem('pending_profile', JSON.stringify({
-        id: data.user.id,
-        full_name: fullName,
-        student_id: studentId.trim() || null,
-      }))
-    }
-
-    // Show email check prompt
-    setLoading(false)
-    setEmailSent(true)
-  }
-
-  // Email verification sent screen
-  if (emailSent) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center px-4 py-12"
-        style={{ background: 'var(--color-pale-blue)' }}
-      >
-        <div className="w-full max-w-md">
-          <div className="card-cream p-8 rounded-2xl text-center space-y-4">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-              style={{ background: 'rgba(156,182,215,0.2)' }}
-            >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--color-navy)' }}>
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="M2 7l10 7 10-7" />
-              </svg>
-            </div>
-            <h1 className="heading-display text-3xl" style={{ color: 'var(--color-navy)' }}>
-              Check your email
-            </h1>
-            <p className="text-sm opacity-70 leading-relaxed" style={{ color: 'var(--color-navy)' }}>
-              We sent a verification link to <strong>{email}</strong>.<br />
-              Click the link in the email to activate your account.
-            </p>
-            <p className="text-xs opacity-50" style={{ color: 'var(--color-navy)' }}>
-              Didn&apos;t receive it? Check your spam folder or{' '}
-              <button
-                type="button"
-                onClick={() => setEmailSent(false)}
-                className="underline font-medium"
-              >
-                try again
-              </button>
-              .
-            </p>
-          </div>
-        </div>
-      </div>
-    )
+    router.push(next || '/my-submissions')
+    router.refresh()
   }
 
   return (

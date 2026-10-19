@@ -1,6 +1,9 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
+import { getEventBySlug } from '@/lib/db/queries/events'
+import { countRegistrationsByEvent } from '@/lib/db/queries/registrations'
+import { getFormFieldsByEvent } from '@/lib/db/queries/form-fields'
 import { isEventPast, isRegistrationClosed } from '@/lib/utils'
 import { Event, FormField } from '@/types'
 import RegistrationPageClient from './RegistrationPageClient'
@@ -16,25 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RegisterPage({ params }: Props) {
   const { slug } = await params
-  const supabase = await createClient()
 
-  const { data: eventData } = await supabase
-    .from('events')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_published', true)
-    .eq('registration_mode', 'internal')
-    .single()
+  const eventData = await getEventBySlug(slug, true)
+  if (!eventData || eventData.registration_mode !== 'internal') notFound()
 
-  if (!eventData) notFound()
-
-  const event: Event = eventData
+  const event: Event = eventData as unknown as Event
 
   // If event requires submission, user must be logged in
   if (event.requires_submission) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      const { redirect } = await import('next/navigation')
+    const session = await getSession()
+    if (!session) {
       redirect(`/login?next=/events/${slug}/register`)
     }
   }
@@ -43,19 +37,13 @@ export default async function RegisterPage({ params }: Props) {
   const past = isEventPast(event)
   const closed = isRegistrationClosed(event)
 
-  const { count: registrantCount } = await supabase
-    .from('registrations')
-    .select('*', { count: 'exact', head: true })
-    .eq('event_id', event.id)
-
-  const full = event.capacity != null && (registrantCount ?? 0) >= event.capacity
+  const registrantCount = await countRegistrationsByEvent(event.id)
+  const full = event.capacity != null && registrantCount >= event.capacity
 
   if (past || closed || full) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-24 text-center">
-        <div
-          className="card-cream p-12"
-        >
+        <div className="card-cream p-12">
           <div className="heading-display text-5xl mb-4 opacity-20" style={{ color: 'var(--color-navy)' }}>!</div>
           <h1 className="heading-section text-3xl mb-3" style={{ color: 'var(--color-navy)' }}>
             {full ? 'This event is full' : past ? 'This event has passed' : 'Registration is closed'}
@@ -73,13 +61,8 @@ export default async function RegisterPage({ params }: Props) {
   }
 
   // Fetch form fields
-  const { data: fieldsData } = await supabase
-    .from('form_fields')
-    .select('*')
-    .eq('event_id', event.id)
-    .order('sort_order')
-
-  const fields: FormField[] = fieldsData ?? []
+  const fieldsData = await getFormFieldsByEvent(event.id)
+  const fields: FormField[] = (fieldsData ?? []) as FormField[]
 
   if (fields.length === 0) {
     return (

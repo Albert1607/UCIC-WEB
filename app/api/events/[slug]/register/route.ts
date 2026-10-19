@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { Event, FormField } from '@/types'
+import { getSession } from '@/lib/auth/session'
+import { getEventBySlug } from '@/lib/db/queries/events'
+import { getFormFieldsByEvent } from '@/lib/db/queries/form-fields'
+import { countRegistrationsByEvent, countRegistrationsByEmail, createRegistration } from '@/lib/db/queries/registrations'
+import { createDraftSubmission } from '@/lib/db/queries/submissions'
+import { FormField } from '@/types'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
@@ -18,21 +21,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid submission.' }, { status: 400 })
     }
 
-    const supabase = await createClient()
-
     // Fetch event
-    const { data: eventData } = await supabase
-      .from('events')
-      .select('*')
-      .eq('slug', slug)
-      .eq('is_published', true)
-      .single()
-
-    if (!eventData) {
+    const event = await getEventBySlug(slug, true)
+    if (!event) {
       return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
     }
-
-    const event: Event = eventData
 
     // Guard: registration mode
     if (event.registration_mode !== 'internal') {
@@ -50,23 +43,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Guard: capacity
-    const { count: registrantCount } = await supabase
-      .from('registrations')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_id', event.id)
-
-    if (event.capacity != null && (registrantCount ?? 0) >= event.capacity) {
+    const registrantCount = await countRegistrationsByEvent(event.id)
+    if (event.capacity != null && registrantCount >= event.capacity) {
       return NextResponse.json({ error: 'This event is full.' }, { status: 400 })
     }
 
     // Fetch form fields
-    const { data: fieldsData } = await supabase
-      .from('form_fields')
-      .select('*')
-      .eq('event_id', event.id)
-      .order('sort_order')
-
-    const fields: FormField[] = fieldsData ?? []
+    const fieldsData = await getFormFieldsByEvent(event.id)
+    const fields = (fieldsData ?? []) as FormField[]
 
     // Server-side validation
     const validationErrors: string[] = []
@@ -101,13 +85,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (event.one_submission_per_email && event.email_field_id) {
       submittedEmail = (answers[event.email_field_id] as string) ?? null
       if (submittedEmail) {
-        const { count: existingCount } = await supabase
-          .from('registrations')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_id', event.id)
-          .eq('submitted_email', submittedEmail)
-
-        if ((existingCount ?? 0) > 0) {
+        const existingCount = await countRegistrationsByEmail(event.id, submittedEmail)
+        if (existingCount > 0) {
           return NextResponse.json(
             { error: 'You have already registered for this event.' },
             { status: 409 }
@@ -116,35 +95,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Get user session (may be null for non-submission events)
-    const { data: { user } } = await supabase.auth.getUser()
+    // Get public user session (may be null for anonymous registrations)
+    const session = await getSession()
 
-    // Insert using admin client (bypasses RLS insert restriction — but we've validated above)
-    const admin = createAdminClient()
-    const { data: insertedReg, error: insertError } = await admin
-      .from('registrations')
-      .insert({
-        event_id: event.id,
-        answers,
-        submitted_email: submittedEmail,
-        user_id: user?.id ?? null,
-      })
-      .select('id')
-      .single()
-
-    if (insertError) {
-      console.error('Registration insert error:', insertError)
-      return NextResponse.json({ error: 'Failed to save registration.' }, { status: 500 })
-    }
+    const insertedReg = await createRegistration({
+      event_id: event.id,
+      answers,
+      submitted_email: submittedEmail,
+      user_id: session?.userId ?? null,
+    })
 
     // If event requires submission, create a draft submission slot
-    if (event.requires_submission && user && insertedReg) {
-      await admin.from('event_submissions').insert({
+    if (event.requires_submission && session && insertedReg) {
+      await createDraftSubmission({
         event_id: event.id,
         registration_id: insertedReg.id,
-        user_id: user.id,
-        answers: {},
-        status: 'draft',
+        user_id: session.userId,
       })
     }
 

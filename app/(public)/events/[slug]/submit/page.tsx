@@ -1,6 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
+import { getEventBySlug } from '@/lib/db/queries/events'
+import { getSubmissionByUserAndEvent, getSubmissionFieldsByEvent } from '@/lib/db/queries/submissions'
 import { Event, SubmissionField, EventSubmission } from '@/types'
 import SubmitClient from './SubmitClient'
 
@@ -19,41 +21,21 @@ export default async function SubmitPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const supabase = await createClient()
+  const session = await getSession()
+  if (!session) redirect(`/login?next=/events/${slug}/submit`)
 
-  // Middleware already redirects if not logged in, but double-guard here
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect(`/login?next=/events/${slug}/submit`)
-
-  const { data: eventData } = await supabase
-    .from('events')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_published', true)
-    .single()
-
+  const eventData = await getEventBySlug(slug, true)
   if (!eventData || !eventData.requires_submission) notFound()
 
-  const event: Event = eventData
+  const event: Event = eventData as unknown as Event
 
   // Fetch this user's submission
-  const { data: submissionData } = await supabase
-    .from('event_submissions')
-    .select('*')
-    .eq('event_id', event.id)
-    .eq('user_id', user.id)
-    .single()
+  const submissionData = await getSubmissionByUserAndEvent(session.userId, event.id)
 
   // Fetch submission fields
-  const { data: fieldsData } = await supabase
-    .from('submission_fields')
-    .select('*')
-    .eq('event_id', event.id)
-    .order('sort_order')
+  const fieldsData = await getSubmissionFieldsByEvent(event.id)
 
-  const submission = submissionData as EventSubmission | null
+  const submission = submissionData as unknown as EventSubmission | null
   const fields = (fieldsData ?? []) as SubmissionField[]
 
   return (
@@ -77,7 +59,7 @@ export default async function SubmitPage({
       </div>
 
       <div className="card-cream p-8">
-        <SubmitClient event={event} submission={submission} fields={fields} />
+        <SubmitClient event={event} submission={submission} fields={fields} userId={session.userId} />
       </div>
     </div>
   )

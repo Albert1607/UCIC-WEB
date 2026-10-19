@@ -10,9 +10,10 @@ interface Props {
   event: Event
   submission: EventSubmission | null
   fields: SubmissionField[]
+  userId: string
 }
 
-export default function SubmitClient({ event, submission, fields }: Props) {
+export default function SubmitClient({ event, submission, fields, userId }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>(submission?.answers ?? {})
   const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const [saving, setSaving] = useState(false)
@@ -34,10 +35,7 @@ export default function SubmitClient({ event, submission, fields }: Props) {
 
   const handleFileUpload = async (field: SubmissionField, file: File) => {
     const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
+    if (!userId) {
       setError('Please log in again.')
       return
     }
@@ -65,7 +63,7 @@ export default function SubmitClient({ event, submission, fields }: Props) {
         return
       }
 
-      const path = `${user.id}/${event.id}/${field.id}/${Date.now()}-${file.name}`
+      const path = `${userId}/${event.id}/${field.id}/${Date.now()}-${file.name}`
       const { error: uploadError } = await supabase.storage
         .from('submission-files')
         .upload(path, file, { upsert: true })

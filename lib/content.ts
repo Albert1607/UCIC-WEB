@@ -1,20 +1,16 @@
-import { ContentMap, SiteContent, SiteStat } from '@/types'
-import { createClient } from '@/lib/supabase/server'
+import { ContentMap, SiteStat } from '@/types'
+import { getAllContent } from '@/lib/db/queries/content'
+import { getAllStats } from '@/lib/db/queries/stats'
 
 /**
  * Fetch all site_content rows and return as a flat { key: value } map.
- * Uses the server client so it runs in Server Components.
+ * Uses the database query so it runs on any PostgreSQL database.
  */
 export async function getSiteContent(): Promise<ContentMap> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('site_content')
-    .select('key, value')
-    .order('key')
-
+  const data = await getAllContent()
   const map: ContentMap = {}
   if (data) {
-    data.forEach((row: { key: string; value: string | null }) => {
+    data.forEach((row) => {
       map[row.key] = row.value ?? ''
     })
   }
@@ -22,12 +18,8 @@ export async function getSiteContent(): Promise<ContentMap> {
 }
 
 export async function getSiteStats(): Promise<SiteStat[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('site_stats')
-    .select('*')
-    .order('sort_order')
-  return data ?? []
+  const data = await getAllStats()
+  return data as unknown as SiteStat[]
 }
 
 /** Get a single content value by key, with a fallback default. */

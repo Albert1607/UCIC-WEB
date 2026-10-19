@@ -1,14 +1,14 @@
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { getAllNews } from '@/lib/db/queries/news'
 import { NewsItem } from '@/types'
 import NewsManager from './NewsManager'
 
 export const metadata: Metadata = { title: 'News – Admin' }
+export const dynamic = 'force-dynamic'
 
 export default async function NewsPage() {
-  const supabase = await createClient()
-  const { data } = await supabase.from('news_items').select('*').order('sort_order')
-  const items: NewsItem[] = data ?? []
+  const data = await getAllNews()
+  const items: NewsItem[] = (data ?? []) as unknown as NewsItem[]
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">

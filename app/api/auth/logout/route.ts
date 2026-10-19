@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { SESSION_COOKIE_NAME } from '@/lib/auth/session'
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-
-  // Determine the base origin (e.g. https://ucic-psi.vercel.app or http://localhost:3000)
   const forwardedHost = request.headers.get('x-forwarded-host')
   const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
   const origin = request.headers.get('origin') ?? request.headers.get('referer')
@@ -21,5 +17,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL('/', baseUrl))
+  const response = NextResponse.redirect(new URL('/', baseUrl))
+  // Clear public user session cookie
+  response.cookies.delete(SESSION_COOKIE_NAME)
+  return response
 }

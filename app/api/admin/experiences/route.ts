@@ -1,68 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { NextRequest, NextResponse } from 'next/server'
+import { getAdminSession } from '@/lib/auth/session'
+import { getAllExperiences, createExperience } from '@/lib/db/queries/experiences'
+
+function unauthorized() { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from('experiences')
-    .select('*')
-    .order('sort_order');
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
+  if (!(await getAdminSession())) return unauthorized()
+  const data = await getAllExperiences()
+  return NextResponse.json(data)
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  let body: { title: string; description?: string; year?: string; sort_order?: number; banner_image_url?: string };
+  if (!(await getAdminSession())) return unauthorized()
+  let body: { title: string; description?: string; year?: string; sort_order?: number; banner_image_url?: string }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  if (!body.title) return NextResponse.json({ error: 'title is required' }, { status: 400 })
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { title, description, year, sort_order, banner_image_url } = body;
-  if (!title) {
-    return NextResponse.json({ error: 'title is required' }, { status: 400 });
-  }
-
-  const admin = createAdminClient();
-
-  let order = sort_order;
-  if (order === undefined) {
-    const { data: maxData } = await admin
-      .from('experiences')
-      .select('sort_order')
-      .order('sort_order', { ascending: false })
-      .limit(1)
-      .single();
-    order = ((maxData?.sort_order as number) ?? -1) + 1;
-  }
-
-  const { data, error } = await admin
-    .from('experiences')
-    .insert({ title, description: description ?? null, year: year ?? null, sort_order: order, banner_image_url: banner_image_url ?? null })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data, { status: 201 });
+    const data = await createExperience({ title: body.title, description: body.description ?? null, year: body.year ?? null, sort_order: body.sort_order, banner_image_url: body.banner_image_url ?? null })
+    return NextResponse.json(data, { status: 201 })
+  } catch (e) { return NextResponse.json({ error: String(e) }, { status: 500 }) }
 }

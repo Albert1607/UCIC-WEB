@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getEventById } from '@/lib/db/queries/events'
 import { Event } from '@/types'
 import EventForm from '@/components/admin/EventForm'
 import EventTabNav from '@/components/admin/EventTabNav'
@@ -13,19 +13,13 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminEventDetailPage({ params }: Props) {
   const { id } = await params
-  const admin = createAdminClient()
+  const event = await getEventById(id)
 
-  const { data: event, error } = await admin
-    .from('events')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-  if (error || !event) {
+  if (!event) {
     notFound()
   }
 
-  const typedEvent = event as Event
+  const typedEvent = event as unknown as Event
 
   return (
     <div className="min-h-screen bg-[var(--color-pale-blue)] p-4 sm:p-6 lg:p-8">

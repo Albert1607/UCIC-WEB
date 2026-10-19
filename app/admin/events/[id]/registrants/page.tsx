@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getEventById } from '@/lib/db/queries/events'
+import { getFormFieldsByEvent } from '@/lib/db/queries/form-fields'
+import { getRegistrationsByEventId } from '@/lib/db/queries/registrations'
 import { Event, FormField, Registration } from '@/types'
 import RegistrantsClient from './RegistrantsClient'
 import EventTabNav from '@/components/admin/EventTabNav'
@@ -13,28 +15,20 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminRegistrantsPage({ params }: Props) {
   const { id } = await params
-  const admin = createAdminClient()
 
-  const [
-    { data: event, error: eventError },
-    { data: fields, error: fieldsError },
-    { data: registrations, error: registrationsError },
-  ] = await Promise.all([
-    admin.from('events').select('*').eq('id', id).single(),
-    admin.from('form_fields').select('*').eq('event_id', id).order('sort_order', { ascending: true }),
-    admin.from('registrations').select('*').eq('event_id', id).order('created_at', { ascending: false }),
+  const [event, fields, registrations] = await Promise.all([
+    getEventById(id),
+    getFormFieldsByEvent(id),
+    getRegistrationsByEventId(id),
   ])
 
-  if (eventError || !event) {
+  if (!event) {
     notFound()
   }
 
-  if (fieldsError) console.error('Error fetching fields:', fieldsError)
-  if (registrationsError) console.error('Error fetching registrations:', registrationsError)
-
-  const typedEvent = event as Event
-  const typedFields = (fields ?? []) as FormField[]
-  const typedRegistrations = (registrations ?? []) as Registration[]
+  const typedEvent = event as unknown as Event
+  const typedFields = (fields ?? []) as unknown as FormField[]
+  const typedRegistrations = (registrations ?? []) as unknown as Registration[]
 
   return (
     <div className="min-h-screen bg-[var(--color-pale-blue)] p-4 sm:p-6 lg:p-8">

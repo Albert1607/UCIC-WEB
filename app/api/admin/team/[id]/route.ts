@@ -1,70 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminSession } from '@/lib/auth/session'
+import { updateTeamMember, deleteTeamMember } from '@/lib/db/queries/team'
 
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+function unauthorized() { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
 
-export async function PATCH(req: NextRequest, { params }: RouteParams) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await getAdminSession())) return unauthorized()
+  const { id } = await params
+  const body = await req.json()
+  const updateData: Record<string, unknown> = {}
+  if (body.name !== undefined) updateData.name = body.name
+  if (body.role !== undefined) updateData.role = body.role
+  if (body.bio !== undefined) updateData.bio = body.bio || null
+  if (body.photo_url !== undefined) updateData.photo_url = body.photo_url || null
+  if (body.sort_order !== undefined) updateData.sort_order = body.sort_order
   try {
-    const { id } = await params
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await req.json()
-    const updateData: Record<string, unknown> = {}
-    if (body.name !== undefined) updateData.name = body.name
-    if (body.role !== undefined) updateData.role = body.role
-    if (body.bio !== undefined) updateData.bio = body.bio || null
-    if (body.photo_url !== undefined) updateData.photo_url = body.photo_url || null
-    if (body.sort_order !== undefined) updateData.sort_order = body.sort_order
-    updateData.updated_at = new Date().toISOString()
-
-    const admin = createAdminClient()
-    const { data, error } = await admin
-      .from('team_members')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-
+    const data = await updateTeamMember(id, updateData)
+    if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json(data)
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal Server Error'
-    return NextResponse.json({ error: message }, { status: 500 })
-  }
+  } catch (e) { return NextResponse.json({ error: String(e) }, { status: 500 }) }
 }
 
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const admin = createAdminClient()
-    const { error } = await admin
-      .from('team_members')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-
-    return NextResponse.json({ success: true })
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal Server Error'
-    return NextResponse.json({ error: message }, { status: 500 })
-  }
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await getAdminSession())) return unauthorized()
+  const { id } = await params
+  await deleteTeamMember(id)
+  return NextResponse.json({ success: true })
 }

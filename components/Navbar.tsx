@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { ContentMap } from '@/types'
-import { createClient } from '@/lib/supabase/client'
 
 interface NavbarProps {
   content: ContentMap
@@ -19,13 +18,17 @@ export default function Navbar({ content }: NavbarProps) {
 
   // Check if user is logged in (public user, not admin)
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => listener.subscription.unsubscribe()
-  }, [])
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setUser({ id: data.user.userId, email: data.user.email })
+        } else {
+          setUser(null)
+        }
+      })
+      .catch(() => setUser(null))
+  }, [pathname])
 
   useEffect(() => {
     const updateContrast = () => {

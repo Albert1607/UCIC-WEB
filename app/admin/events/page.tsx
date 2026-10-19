@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getAllEvents } from '@/lib/db/queries/events'
 import { Event } from '@/types'
 import { formatDate } from '@/lib/utils'
 import DeleteEventButton from './DeleteEventButton'
@@ -7,18 +7,8 @@ import DeleteEventButton from './DeleteEventButton'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminEventsPage() {
-  const supabase = await createClient()
-
-  const { data: events, error } = await supabase
-    .from('events')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching events:', error)
-  }
-
-  const eventList: Event[] = events ?? []
+  const events = await getAllEvents()
+  const eventList: Event[] = (events ?? []) as unknown as Event[]
 
   const registrationModeLabel: Record<string, string> = {
     none: 'None',

@@ -1,30 +1,26 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db/client'
+
+export const dynamic = 'force-dynamic'
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
-
   // Fetch quick stats
   const [
-    { count: eventCount },
-    { count: registrationCount },
-    { count: teamCount },
-    { data: recentEvents },
+    [{ count: eventCount }],
+    [{ count: registrationCount }],
+    [{ count: teamCount }],
+    recentEvents,
   ] = await Promise.all([
-    supabase.from('events').select('*', { count: 'exact', head: true }),
-    supabase.from('registrations').select('*', { count: 'exact', head: true }),
-    supabase.from('team_members').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('events')
-      .select('id, title, slug, is_published, date, registration_mode')
-      .order('created_at', { ascending: false })
-      .limit(5),
+    db`SELECT COUNT(*) as count FROM events`,
+    db`SELECT COUNT(*) as count FROM registrations`,
+    db`SELECT COUNT(*) as count FROM team_members`,
+    db`SELECT id, title, slug, is_published, date, registration_mode FROM events ORDER BY created_at DESC LIMIT 5`,
   ])
 
   const quickStats = [
-    { label: 'Total Events', value: eventCount ?? 0, href: '/admin/events', color: 'var(--color-navy)' },
-    { label: 'Registrations', value: registrationCount ?? 0, href: '/admin/events', color: 'var(--color-dusty-blue)' },
-    { label: 'Team Members', value: teamCount ?? 0, href: '/admin/team', color: 'var(--color-navy-secondary)' },
+    { label: 'Total Events', value: Number(eventCount ?? 0), href: '/admin/events', color: 'var(--color-navy)' },
+    { label: 'Registrations', value: Number(registrationCount ?? 0), href: '/admin/events', color: 'var(--color-dusty-blue)' },
+    { label: 'Team Members', value: Number(teamCount ?? 0), href: '/admin/team', color: 'var(--color-navy-secondary)' },
   ]
 
   return (

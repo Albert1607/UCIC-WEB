@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   next?: string
@@ -21,11 +20,16 @@ export default function LoginClient({ next }: Props) {
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
 
-    if (authError) {
-      setError(authError.message)
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error ?? 'Login failed.')
       setLoading(false)
       return
     }

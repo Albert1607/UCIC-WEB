@@ -1,39 +1,48 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db/client'
+import { getSession } from '@/lib/auth/session'
 import { formatDate, formatDateTime } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'My Submissions — UCIC' }
 export const dynamic = 'force-dynamic'
 
 export default async function MySubmissionsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login?next=/my-submissions')
+  const session = await getSession()
+  if (!session) redirect('/login?next=/my-submissions')
 
   // Get all registrations for this user with event details
-  const { data: registrations } = await supabase
-    .from('registrations')
-    .select(
-      'id, event_id, created_at, events(id, title, slug, date, requires_submission, submission_deadline, is_published)'
-    )
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+  const regs = await db`
+    SELECT
+      r.id,
+      r.event_id,
+      r.created_at,
+      json_build_object(
+        'id', e.id,
+        'title', e.title,
+        'slug', e.slug,
+        'date', e.date,
+        'requires_submission', e.requires_submission,
+        'submission_deadline', e.submission_deadline,
+        'is_published', e.is_published
+      ) as events
+    FROM registrations r
+    JOIN events e ON r.event_id = e.id
+    WHERE r.user_id = ${session.userId}
+    ORDER BY r.created_at DESC
+  `
 
   // Get all submissions for this user
-  const { data: submissions } = await supabase
-    .from('event_submissions')
-    .select('id, event_id, status, submitted_at, registration_id')
-    .eq('user_id', user.id)
+  const submissions = await db`
+    SELECT id, event_id, status, submitted_at, registration_id
+    FROM event_submissions
+    WHERE user_id = ${session.userId}
+  `
 
   const submissionsByEventId = Object.fromEntries(
     (submissions ?? []).map((s) => [s.event_id, s])
   )
-
-  const regs = registrations ?? []
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
@@ -46,6 +55,9 @@ export default async function MySubmissionsPage() {
         >
           My Registrations
         </h1>
+        <p className="text-sm opacity-60 mt-2" style={{ color: 'var(--color-navy)' }}>
+          Signed in as <strong>{session.email}</strong>
+        </p>
       </div>
 
       {regs.length === 0 ? (

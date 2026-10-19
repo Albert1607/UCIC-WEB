@@ -1,27 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getUniqueSlug } from '@/lib/utils'
+import { getAdminSession } from '@/lib/auth/session'
+import { updateEvent, deleteEvent, getUniqueEventSlug } from '@/lib/db/queries/events'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+function unauthorized() {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+}
+
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
+    if (!(await getAdminSession())) return unauthorized()
     const { id } = await params
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
-    const admin = createAdminClient()
     const body = await req.json()
     const updateData: Record<string, unknown> = {}
 
     if (body.title !== undefined) updateData.title = body.title
-    if (body.slug !== undefined) updateData.slug = await getUniqueSlug(admin, body.slug, id)
+    if (body.slug !== undefined) updateData.slug = await getUniqueEventSlug(body.slug, id)
     if (body.description !== undefined) updateData.description = body.description || null
     if (body.date !== undefined) updateData.date = body.date || null
     if (body.end_date !== undefined) updateData.end_date = body.end_date || null
@@ -39,51 +37,30 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (body.submission_instructions !== undefined) updateData.submission_instructions = body.submission_instructions || null
     if (body.post_registration_message !== undefined) updateData.post_registration_message = body.post_registration_message || null
 
-    updateData.updated_at = new Date().toISOString()
-
-    const { data, error } = await admin
-      .from('events')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) {
-      if (error.code === '23505' || error.message?.includes('events_slug_key')) {
-        return NextResponse.json(
-          { error: 'An event with this slug already exists. Please choose a different slug.' },
-          { status: 409 }
-        )
-      }
-      return NextResponse.json({ error: error.message }, { status: 400 })
+    const updated = await updateEvent(id, updateData)
+    if (!updated) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ ...data, event: data })
+    return NextResponse.json({ ...updated, event: updated })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal Server Error'
+    if (message.includes('23505') || message.includes('events_slug_key')) {
+      return NextResponse.json(
+        { error: 'An event with this slug already exists. Please choose a different slug.' },
+        { status: 409 }
+      )
+    }
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
+export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
+    if (!(await getAdminSession())) return unauthorized()
     const { id } = await params
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
-    const admin = createAdminClient()
-    const { error } = await admin
-      .from('events')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-
+    await deleteEvent(id)
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal Server Error'

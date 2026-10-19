@@ -2,7 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { getEventBySlug } from '@/lib/db/queries/events'
+import { countRegistrationsByEvent } from '@/lib/db/queries/registrations'
 import { getSiteContent } from '@/lib/content'
 import { formatDate, formatDateTime, isEventPast, isRegistrationClosed } from '@/lib/utils'
 import { Event } from '@/types'
@@ -13,13 +14,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('events')
-    .select('title, description')
-    .eq('slug', slug)
-    .eq('is_published', true)
-    .single()
+  const data = await getEventBySlug(slug, true)
 
   if (!data) return { title: 'Event Not Found' }
   return {
@@ -30,24 +25,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventDetailPage({ params }: Props) {
   const { slug } = await params
-  const [supabase, content] = await Promise.all([createClient(), getSiteContent()])
-
-  const { data: eventData } = await supabase
-    .from('events')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_published', true)
-    .single()
+  const [eventData, content] = await Promise.all([
+    getEventBySlug(slug, true),
+    getSiteContent(),
+  ])
 
   if (!eventData) notFound()
 
-  const event: Event = eventData
+  const event: Event = eventData as unknown as Event
 
   // Count registrations
-  const { count: registrantCount } = await supabase
-    .from('registrations')
-    .select('*', { count: 'exact', head: true })
-    .eq('event_id', event.id)
+  const registrantCount = await countRegistrationsByEvent(event.id)
 
   const past = isEventPast(event)
   const closed = isRegistrationClosed(event)

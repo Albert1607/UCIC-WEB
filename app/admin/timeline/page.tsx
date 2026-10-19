@@ -1,15 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAllTimeline } from '@/lib/db/queries/timeline'
 import { TimelineItem } from '@/types'
 import TimelineManager from './TimelineManager'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminTimelinePage() {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('timeline_items')
-    .select('*')
-    .order('sort_order', { ascending: true })
+  const data = await getAllTimeline()
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -19,7 +15,7 @@ export default async function AdminTimelinePage() {
           Manage the &ldquo;Our Journey&rdquo; section shown on the About page.
         </p>
       </div>
-      <TimelineManager initialItems={(data ?? []) as TimelineItem[]} />
+      <TimelineManager initialItems={(data ?? []) as unknown as TimelineItem[]} />
     </div>
   )
 }

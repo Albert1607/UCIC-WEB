@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
 import LoginClient from './LoginClient'
 
 export const metadata: Metadata = { title: 'Login — UCIC' }
@@ -11,12 +11,9 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>
 }) {
   const { next } = await searchParams
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const session = await getSession()
 
-  if (user) redirect(next || '/my-submissions')
+  if (session) redirect(next || '/my-submissions')
 
   return <LoginClient next={next} />
 }

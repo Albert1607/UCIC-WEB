@@ -1,22 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAllStats } from '@/lib/db/queries/stats'
 import { SiteStat } from '@/types'
 import StatsManager from './StatsManager'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminStatsPage() {
-  const supabase = await createClient()
-
-  const { data: stats, error } = await supabase
-    .from('site_stats')
-    .select('*')
-    .order('sort_order', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching site_stats:', error)
-  }
-
-  const statList: SiteStat[] = stats ?? []
+  const stats = await getAllStats()
+  const statList: SiteStat[] = (stats ?? []) as unknown as SiteStat[]
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">

@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { getSiteContent, getSiteStats } from '@/lib/content'
-import { createClient } from '@/lib/supabase/server'
+import { getAllEvents } from '@/lib/db/queries/events'
+import { getAllCarouselItems } from '@/lib/db/queries/hero-carousel'
+import { getAllNews } from '@/lib/db/queries/news'
 import { Event, SiteStat, HeroCarouselItem, NewsItem } from '@/types'
 import EventCard from '@/components/EventCard'
 import ScrollingStrip from '@/components/ScrollingStrip'
@@ -11,34 +13,19 @@ import NewsCarousel from '@/components/NewsCarousel'
 import { formatDate } from '@/lib/utils'
 
 export default async function HomePage() {
-  const [content, stats] = await Promise.all([getSiteContent(), getSiteStats()])
-  const supabase = await createClient()
+  const [content, stats, allPublishedEvents, carouselData, newsData] = await Promise.all([
+    getSiteContent(),
+    getSiteStats(),
+    getAllEvents(true),
+    getAllCarouselItems(),
+    getAllNews(),
+  ])
 
-  // Fetch recent published events
-  const { data: recentEvents } = await supabase
-    .from('events')
-    .select('*')
-    .eq('is_published', true)
-    .order('date', { ascending: false })
-    .limit(4)
-
-  // Fetch hero carousel items
-  const { data: carouselData } = await supabase
-    .from('hero_carousel_items')
-    .select('*')
-    .order('sort_order')
-
-  // Fetch news items
-  const { data: newsData } = await supabase
-    .from('news_items')
-    .select('*')
-    .order('sort_order')
-
-  const events: Event[] = recentEvents ?? []
+  const events: Event[] = (allPublishedEvents ?? []) as unknown as Event[]
   const upcomingEvents = events.filter((e) => e.date && new Date(e.date) >= new Date())
   const latestEvents = events.slice(0, 3)
-  const carouselItems: HeroCarouselItem[] = carouselData ?? []
-  const newsItems: NewsItem[] = newsData ?? []
+  const carouselItems: HeroCarouselItem[] = carouselData as unknown as HeroCarouselItem[]
+  const newsItems: NewsItem[] = newsData as unknown as NewsItem[]
 
   const heroImage = content['hero_image_url']
   const newsPerView = parseInt(content['news_carousel_per_view'] || '3', 10)

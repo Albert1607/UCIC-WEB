@@ -1,15 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAllExperiences } from '@/lib/db/queries/experiences'
 import { Experience } from '@/types'
 import ExperiencesManager from './ExperiencesManager'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminExperiencesPage() {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('experiences')
-    .select('*')
-    .order('sort_order', { ascending: true })
+  const data = await getAllExperiences()
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -19,7 +15,7 @@ export default async function AdminExperiencesPage() {
           Manage the &ldquo;What We Do&rdquo; cards shown on the About page.
         </p>
       </div>
-      <ExperiencesManager initialExperiences={(data ?? []) as Experience[]} />
+      <ExperiencesManager initialExperiences={(data ?? []) as unknown as Experience[]} />
     </div>
   )
 }

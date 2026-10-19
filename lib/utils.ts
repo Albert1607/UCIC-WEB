@@ -1,5 +1,4 @@
 import { Event } from '@/types'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export function isEventPast(event: Event): boolean {
   if (!event.date) return false
@@ -47,40 +46,6 @@ export function generateSlug(title: string): string {
   return slug || 'event'
 }
 
-export async function getUniqueSlug(
-  supabase: SupabaseClient,
-  baseSlug: string,
-  excludeId?: string
-): Promise<string> {
-  const cleanBase = generateSlug(baseSlug) || 'event'
-
-  let query = supabase
-    .from('events')
-    .select('slug, id')
-    .or(`slug.eq.${cleanBase},slug.like.${cleanBase}-%`)
-
-  if (excludeId) {
-    query = query.neq('id', excludeId)
-  }
-
-  const { data: existingEvents, error } = await query
-
-  if (error || !existingEvents || existingEvents.length === 0) {
-    return cleanBase
-  }
-
-  const existingSlugs = new Set(existingEvents.map((e: { slug: string }) => e.slug))
-  if (!existingSlugs.has(cleanBase)) {
-    return cleanBase
-  }
-
-  let counter = 1
-  while (existingSlugs.has(`${cleanBase}-${counter}`)) {
-    counter++
-  }
-
-  return `${cleanBase}-${counter}`
-}
 
 export function getSupabaseImageUrl(bucket: string, path: string): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL

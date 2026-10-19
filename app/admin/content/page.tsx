@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { db } from '@/lib/db/client';
+import { getAllContent } from '@/lib/db/queries/content';
 import ContentEditor from './ContentEditor';
 
 export const dynamic = 'force-dynamic';
@@ -9,18 +9,7 @@ const REQUIRED_CONTENT_KEYS: { key: string; label: string; value: string }[] = [
 ];
 
 export default async function ContentPage() {
-  const supabase = await createClient();
-
-  let { data, error } = await supabase
-    .from('site_content')
-    .select('id, key, value, label')
-    .order('key');
-
-  if (error) {
-    console.error('Error fetching site_content:', error);
-  }
-
-  let content = data ?? [];
+  let content = await getAllContent();
 
   // Self-heal: ensure critical keys like about_image_url exist in the database
   const existingKeys = new Set(content.map((c) => c.key));
@@ -28,22 +17,14 @@ export default async function ContentPage() {
 
   if (missing.length > 0) {
     try {
-      const admin = createAdminClient();
       for (const item of missing) {
-        await admin.from('site_content').insert({
-          key: item.key,
-          label: item.label,
-          value: item.value,
-          content_type: 'text',
-        });
+        await db`
+          INSERT INTO site_content (key, label, value, content_type)
+          VALUES (${item.key}, ${item.label}, ${item.value}, 'text')
+          ON CONFLICT DO NOTHING
+        `;
       }
-      const refetched = await supabase
-        .from('site_content')
-        .select('id, key, value, label')
-        .order('key');
-      if (refetched.data) {
-        content = refetched.data;
-      }
+      content = await getAllContent();
     } catch (e) {
       console.error('Error auto-inserting missing content keys:', e);
     }

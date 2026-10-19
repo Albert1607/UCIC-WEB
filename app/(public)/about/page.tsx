@@ -2,7 +2,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getSiteContent } from '@/lib/content'
-import { createClient } from '@/lib/supabase/server'
+import { getAllTeamMembers } from '@/lib/db/queries/team'
+import { getAllExperiences } from '@/lib/db/queries/experiences'
+import { getAllTimeline } from '@/lib/db/queries/timeline'
 import { TeamMember, Experience, TimelineItem } from '@/types'
 import SectionLabel from '@/components/SectionLabel'
 import ScrollingStrip from '@/components/ScrollingStrip'
@@ -14,17 +16,16 @@ export const metadata: Metadata = { title: 'About Us' }
 
 export default async function AboutPage() {
   const content = await getSiteContent()
-  const supabase = await createClient()
 
-  const [{ data: teamData }, { data: expData }, { data: timelineData }] = await Promise.all([
-    supabase.from('team_members').select('*').order('sort_order'),
-    supabase.from('experiences').select('*').order('sort_order'),
-    supabase.from('timeline_items').select('*').order('sort_order'),
+  const [teamData, expData, timelineData] = await Promise.all([
+    getAllTeamMembers(),
+    getAllExperiences(),
+    getAllTimeline(),
   ])
 
-  const team: TeamMember[] = teamData ?? []
-  const experiences: Experience[] = expData ?? []
-  const timeline: TimelineItem[] = timelineData ?? []
+  const team: TeamMember[] = (teamData ?? []) as unknown as TeamMember[]
+  const experiences: Experience[] = (expData ?? []) as unknown as Experience[]
+  const timeline: TimelineItem[] = (timelineData ?? []) as unknown as TimelineItem[]
 
   return (
     <div>

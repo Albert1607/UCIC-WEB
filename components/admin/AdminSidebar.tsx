@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
   {
@@ -109,8 +108,7 @@ export default function AdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await fetch('/api/admin/auth/logout', { method: 'POST' })
     router.push('/admin/login')
     router.refresh()
   }

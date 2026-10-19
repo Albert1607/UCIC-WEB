@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
+import { getEventBySlug } from '@/lib/db/queries/events'
+import {
+  getSubmissionByUserAndEvent,
+  getSubmissionFieldsByEvent,
+  updateSubmission
+} from '@/lib/db/queries/submissions'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
@@ -8,35 +14,18 @@ interface RouteParams {
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Get event
-    const { data: event } = await supabase
-      .from('events')
-      .select('id, slug, requires_submission, submission_deadline, submission_instructions')
-      .eq('slug', slug)
-      .eq('is_published', true)
-      .single()
+    const event = await getEventBySlug(slug, true)
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
 
     // Get submission
-    const { data: submission } = await supabase
-      .from('event_submissions')
-      .select('*')
-      .eq('event_id', event.id)
-      .eq('user_id', user.id)
-      .single()
+    const submission = await getSubmissionByUserAndEvent(session.userId, event.id)
 
     // Get submission fields
-    const { data: fields } = await supabase
-      .from('submission_fields')
-      .select('*')
-      .eq('event_id', event.id)
-      .order('sort_order')
+    const fields = await getSubmissionFieldsByEvent(event.id)
 
     return NextResponse.json({ submission: submission ?? null, fields: fields ?? [], event })
   } catch {
@@ -47,25 +36,17 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const { answers, finalize } = body as {
-      answers: Record<string, string>
+      answers: Record<string, unknown>
       finalize?: boolean
     }
 
     // Get event
-    const { data: event } = await supabase
-      .from('events')
-      .select('id, submission_deadline')
-      .eq('slug', slug)
-      .eq('is_published', true)
-      .single()
+    const event = await getEventBySlug(slug, true)
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
 
     // Check deadline if finalizing
@@ -73,27 +54,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Submission deadline has passed.' }, { status: 400 })
     }
 
-    // Build update payload
-    const updateData: Record<string, unknown> = {
-      answers,
-      updated_at: new Date().toISOString(),
-    }
-    if (finalize) {
-      updateData.status = 'submitted'
-      updateData.submitted_at = new Date().toISOString()
+    const updated = await updateSubmission(session.userId, event.id, answers, !!finalize)
+    if (!updated) {
+      return NextResponse.json({ error: 'Failed to update submission or submission already finalized.' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
-      .from('event_submissions')
-      .update(updateData)
-      .eq('event_id', event.id)
-      .eq('user_id', user.id)
-      .eq('status', 'draft') // Can only update draft submissions
-      .select()
-      .single()
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-    return NextResponse.json({ submission: data })
+    return NextResponse.json({ submission: updated })
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }

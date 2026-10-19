@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getEventById } from '@/lib/db/queries/events'
+import { getFormFieldsByEvent } from '@/lib/db/queries/form-fields'
 import type { Event, FormField } from '@/types'
 import FormBuilderClient from './FormBuilderClient'
 import EventTabNav from '@/components/admin/EventTabNav'
@@ -13,30 +14,18 @@ export const dynamic = 'force-dynamic'
 
 export default async function FormBuilderPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = createAdminClient()
 
-  const { data: event, error: eventError } = await supabase
-    .from('events')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const [event, fields] = await Promise.all([
+    getEventById(id),
+    getFormFieldsByEvent(id),
+  ])
 
-  if (eventError || !event) {
+  if (!event) {
     notFound()
   }
 
-  const { data: fields, error: fieldsError } = await supabase
-    .from('form_fields')
-    .select('*')
-    .eq('event_id', id)
-    .order('sort_order', { ascending: true })
-
-  if (fieldsError) {
-    console.error('Error fetching form fields:', fieldsError)
-  }
-
-  const typedEvent = event as Event
-  const typedFields = (fields ?? []) as FormField[]
+  const typedEvent = event as unknown as Event
+  const typedFields = (fields ?? []) as unknown as FormField[]
 
   return (
     <div className="min-h-screen bg-[var(--color-pale-blue)] p-4 sm:p-6 lg:p-8">

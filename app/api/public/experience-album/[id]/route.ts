@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getAlbumItemsByExperience } from '@/lib/db/queries/experiences'
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-
-  const { data, error } = await supabase
-    .from('experience_album_items')
-    .select('*')
-    .eq('experience_id', id)
-    .order('sort_order')
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data ?? [])
+  const data = await getAlbumItemsByExperience(id)
+  return NextResponse.json(data)
 }

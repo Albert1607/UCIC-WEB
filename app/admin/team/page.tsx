@@ -1,22 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAllTeamMembers } from '@/lib/db/queries/team'
 import { TeamMember } from '@/types'
 import TeamManager from './TeamManager'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminTeamPage() {
-  const supabase = await createClient()
-
-  const { data: members, error } = await supabase
-    .from('team_members')
-    .select('*')
-    .order('sort_order', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching team members:', error)
-  }
-
-  const memberList: TeamMember[] = members ?? []
+  const members = await getAllTeamMembers()
+  const memberList: TeamMember[] = (members ?? []) as unknown as TeamMember[]
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">

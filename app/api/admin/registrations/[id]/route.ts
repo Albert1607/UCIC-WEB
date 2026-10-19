@@ -1,30 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminSession } from '@/lib/auth/session'
+import { deleteRegistration } from '@/lib/db/queries/registrations'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
+function unauthorized() {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+}
+
+export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
+    if (!(await getAdminSession())) return unauthorized()
     const { id } = await params
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
-    const admin = createAdminClient()
-    const { error } = await admin
-      .from('registrations')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-
+    await deleteRegistration(id)
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal Server Error'

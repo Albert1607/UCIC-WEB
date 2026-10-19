@@ -1,14 +1,14 @@
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { getAllCarouselItems } from '@/lib/db/queries/hero-carousel'
 import { HeroCarouselItem } from '@/types'
 import HeroCarouselManager from './HeroCarouselManager'
 
 export const metadata: Metadata = { title: 'Hero Carousel – Admin' }
+export const dynamic = 'force-dynamic'
 
 export default async function HeroCarouselPage() {
-  const supabase = await createClient()
-  const { data } = await supabase.from('hero_carousel_items').select('*').order('sort_order')
-  const items: HeroCarouselItem[] = data ?? []
+  const data = await getAllCarouselItems()
+  const items: HeroCarouselItem[] = (data ?? []) as unknown as HeroCarouselItem[]
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
